@@ -125,6 +125,7 @@ public sealed class ScanOrchestrator(
             var trivyOptions = new TrivyOptions
             {
                 Scanners = settings.Scanners,
+                TrivyPath = settings.TrivyPath,
                 Severities = settings.Severities,
                 IgnoreUnfixed = settings.IgnoreUnfixed,
                 Timeout = TimeSpan.FromSeconds(settings.DefaultTimeoutSeconds),

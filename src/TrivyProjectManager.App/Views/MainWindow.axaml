@@ -326,6 +326,8 @@
 
               <TextBlock Text="Aplicação" FontSize="18" FontWeight="SemiBold" Margin="0,12,0,0" />
               <TextBox PlaceholderText="Caminho do Trivy" Text="{Binding Settings.TrivyPath}" />
+              <CheckBox Content="Instalar o Trivy automaticamente quando necessário" IsChecked="{Binding Settings.AutoInstallTrivy}" />
+              <CheckBox Content="Verificar atualização do Trivy ao abrir" IsChecked="{Binding Settings.AutoUpdateTrivyOnStartup}" />
               <NumericUpDown Value="{Binding Settings.DefaultTimeoutSeconds}" Minimum="30" Maximum="7200" />
               <TextBox PlaceholderText="Diretório de armazenamento" Text="{Binding Settings.StorageDirectory}" />
               <TextBox PlaceholderText="Scanners padrão" Text="{Binding Settings.Scanners}" />
@@ -362,7 +364,8 @@
               <TextBlock Text="Privacidade" FontSize="20" FontWeight="SemiBold" />
               <TextBlock Text="O Package-Analyzer by: YuriAPCarvalho foi desenvolvido por YuriAPCarvalho para funcionar de forma local-first, sem login, telemetria ou envio automático de dados." FontSize="16" TextWrapping="Wrap" />
               <TextBlock Text="A aplicação não envia código-fonte, relatórios, nomes de projetos, caminhos locais ou resultados de scans para serviços externos." FontSize="16" TextWrapping="Wrap" />
-              <TextBlock Text="Os scans são executados pelo Trivy instalado localmente. O próprio Trivy pode acessar a internet para baixar ou atualizar sua base pública de vulnerabilidades, quando necessário." FontSize="16" TextWrapping="Wrap" />
+              <TextBlock Text="Na primeira execução, ou quando a atualização automática estiver habilitada, a aplicação pode acessar os releases públicos do Trivy no GitHub/Aqua Security para baixar ou atualizar o trivy.exe gerenciado localmente." FontSize="16" TextWrapping="Wrap" />
+              <TextBlock Text="Os scans são executados pelo Trivy local. O próprio Trivy também pode acessar a internet para baixar ou atualizar sua base pública de vulnerabilidades, quando necessário." FontSize="16" TextWrapping="Wrap" />
               <TextBlock Text="Possíveis segredos são exibidos e armazenados de forma mascarada. Links de referência só são abertos no navegador externo quando você clicar explicitamente no botão de abrir referência." FontSize="16" TextWrapping="Wrap" />
             </StackPanel>
           </ScrollViewer>

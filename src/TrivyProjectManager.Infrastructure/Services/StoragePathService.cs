@@ -18,6 +18,8 @@ public sealed class StoragePathService : IStoragePathService
 
     public string GetSettingsPath() => Path.Combine(_basePath, "settings.json");
 
+    public string GetManagedTrivyExecutablePath() => Path.Combine(_basePath, "tools", "trivy", "trivy.exe");
+
     public string GetReportDirectory(Project project)
     {
         return project.StorageMode == ReportStorageMode.InsideProject

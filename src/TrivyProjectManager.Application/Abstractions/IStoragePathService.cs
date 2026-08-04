@@ -6,6 +6,7 @@ public interface IStoragePathService
 {
     string GetDatabasePath();
     string GetSettingsPath();
+    string GetManagedTrivyExecutablePath();
     string GetReportDirectory(Project project);
     string GetLogDirectory(Project project);
     string GetSbomDirectory(Project project);

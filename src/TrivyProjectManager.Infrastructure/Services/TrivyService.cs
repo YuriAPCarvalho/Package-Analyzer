@@ -3,13 +3,19 @@ using TrivyProjectManager.Application.DTOs;
 
 namespace TrivyProjectManager.Infrastructure.Services;
 
-public sealed class TrivyService(IProcessRunner processRunner) : ITrivyService
+public sealed class TrivyService(IProcessRunner processRunner, IStoragePathService storagePathService) : ITrivyService
 {
     public string? LocateExecutable(string? configuredPath = null)
     {
         if (!string.IsNullOrWhiteSpace(configuredPath) && File.Exists(configuredPath))
         {
             return configuredPath;
+        }
+
+        var managedPath = storagePathService.GetManagedTrivyExecutablePath();
+        if (File.Exists(managedPath))
+        {
+            return managedPath;
         }
 
         return PathEnvironment.FindExecutable("trivy");
@@ -35,7 +41,7 @@ public sealed class TrivyService(IProcessRunner processRunner) : ITrivyService
 
     public Task<ProcessResult> ScanFileSystemAsync(string projectPath, string outputJsonPath, TrivyOptions options, IProgress<ProcessLogLine>? progress = null, CancellationToken cancellationToken = default)
     {
-        var executable = LocateExecutable()
+        var executable = LocateExecutable(options.TrivyPath)
             ?? throw new FileNotFoundException("Trivy executable was not found. Configure the trivy.exe path in settings.");
 
         Directory.CreateDirectory(Path.GetDirectoryName(outputJsonPath)!);

@@ -21,7 +21,7 @@ samples/trivy-reports/
 ## Requisitos
 
 - .NET SDK com suporte a `net9.0`.
-- Trivy instalado localmente.
+- Trivy instalado localmente ou instalação automática habilitada no app.
 - Windows é o alvo inicial. A arquitetura evita APIs Windows fora de seleção de arquivo/janela e abertura explícita de links.
 
 ## Instalar o Trivy
@@ -33,6 +33,8 @@ choco install trivy
 ```
 
 Ou baixar o executável em https://github.com/aquasecurity/trivy/releases e configurar o caminho do `trivy.exe` na tela de configurações. A aplicação tenta detectar o Trivy pelo `PATH`.
+
+Por padrão, o Package-Analyzer também consegue baixar o Trivy automaticamente na primeira execução. A cópia gerenciada fica em `%LOCALAPPDATA%\TrivyProjectManager\tools\trivy\trivy.exe` e pode ser atualizada ao abrir o app quando a opção `Verificar atualização do Trivy ao abrir` estiver habilitada.
 
 ## Executar
 
@@ -75,9 +77,9 @@ O scan completo mostra aviso porque restore/install/build/test podem executar sc
 
 O Package-Analyzer by: YuriAPCarvalho foi desenvolvido para funcionar de forma local-first. Não há login, telemetria, analytics, upload automático, integração em nuvem ou enriquecimento externo de CVEs nesta versão.
 
-A aplicação não envia código-fonte, relatórios, nomes de projetos, caminhos locais ou resultados de scans para serviços externos. Os scans são executados pelo Trivy instalado localmente.
+A aplicação não envia código-fonte, relatórios, nomes de projetos, caminhos locais ou resultados de scans para serviços externos. Os scans são executados pelo Trivy local.
 
-O Trivy pode acessar a internet para baixar ou atualizar sua base pública de vulnerabilidades. Possíveis segredos são mascarados antes de aparecer na interface ou serem persistidos, e links de referência só são abertos por ação explícita do usuário.
+Quando a instalação/atualização automática estiver habilitada, a aplicação pode acessar os releases públicos do Trivy no GitHub/Aqua Security para baixar ou atualizar o `trivy.exe` gerenciado. O Trivy também pode acessar a internet para baixar ou atualizar sua base pública de vulnerabilidades. Possíveis segredos são mascarados antes de aparecer na interface ou serem persistidos, e links de referência só são abertos por ação explícita do usuário.
 
 ## Testes
 

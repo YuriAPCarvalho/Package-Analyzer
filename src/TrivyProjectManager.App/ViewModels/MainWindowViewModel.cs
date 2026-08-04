@@ -20,6 +20,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
     private readonly ICommandProfileService _commandProfileService;
     private readonly IScanOrchestrator _scanOrchestrator;
     private readonly IAppSettingsService _settingsService;
+    private readonly ITrivyBootstrapService _trivyBootstrapService;
     private readonly IExternalLinkService _externalLinkService;
     private readonly IDialogService _dialogService;
     private CancellationTokenSource? _scanCancellation;
@@ -31,6 +32,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
         ICommandProfileService commandProfileService,
         IScanOrchestrator scanOrchestrator,
         IAppSettingsService settingsService,
+        ITrivyBootstrapService trivyBootstrapService,
         IExternalLinkService externalLinkService,
         IDialogService dialogService)
     {
@@ -39,6 +41,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
         _commandProfileService = commandProfileService;
         _scanOrchestrator = scanOrchestrator;
         _settingsService = settingsService;
+        _trivyBootstrapService = trivyBootstrapService;
         _externalLinkService = externalLinkService;
         _dialogService = dialogService;
     }
@@ -241,7 +244,34 @@ public sealed partial class MainWindowViewModel : ObservableObject
     private async Task LoadAsync()
     {
         Settings = await _settingsService.LoadAsync();
+        await EnsureTrivyAvailableAsync();
         await ReloadProjectsAsync(selectFirstWhenMissing: true);
+    }
+
+    private async Task EnsureTrivyAvailableAsync()
+    {
+        if (!Settings.AutoInstallTrivy)
+        {
+            return;
+        }
+
+        try
+        {
+            ProgressText = "Verificando Trivy...";
+            var progress = new Progress<string>(message => Dispatcher.UIThread.Post(() => ProgressText = message));
+            var result = await _trivyBootstrapService.EnsureAvailableAsync(Settings, progress);
+            Settings.TrivyPath = result.ExecutablePath ?? Settings.TrivyPath;
+            ProgressText = result.Version is null
+                ? result.Message
+                : $"{result.Message} {result.Version}";
+        }
+        catch (Exception ex)
+        {
+            ProgressText = "Não foi possível preparar o Trivy";
+            await _dialogService.ShowMessageAsync(
+                "Trivy automático",
+                $"Não foi possível baixar ou atualizar o Trivy automaticamente. Você ainda pode configurar o caminho do trivy.exe manualmente em Configurações.\n\n{ex.Message}");
+        }
     }
 
     [RelayCommand]
