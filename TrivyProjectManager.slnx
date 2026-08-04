@@ -1,0 +1,8 @@
+<Solution>
+  <Project Path="src/TrivyProjectManager.App/TrivyProjectManager.App.csproj" />
+  <Project Path="src/TrivyProjectManager.Application/TrivyProjectManager.Application.csproj" />
+  <Project Path="src/TrivyProjectManager.Domain/TrivyProjectManager.Domain.csproj" />
+  <Project Path="src/TrivyProjectManager.Infrastructure/TrivyProjectManager.Infrastructure.csproj" />
+  <Project Path="tests/TrivyProjectManager.IntegrationTests/TrivyProjectManager.IntegrationTests.csproj" />
+  <Project Path="tests/TrivyProjectManager.UnitTests/TrivyProjectManager.UnitTests.csproj" />
+</Solution>

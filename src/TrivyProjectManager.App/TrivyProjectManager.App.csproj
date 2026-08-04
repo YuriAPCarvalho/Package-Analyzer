@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <AssemblyName>Package-Analyzer</AssemblyName>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TrivyProjectManager.Application\TrivyProjectManager.Application.csproj" />
+    <ProjectReference Include="..\TrivyProjectManager.Domain\TrivyProjectManager.Domain.csproj" />
+    <ProjectReference Include="..\TrivyProjectManager.Infrastructure\TrivyProjectManager.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="12.1.0" />
+    <PackageReference Include="Avalonia.Desktop" Version="12.1.0" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.0" />
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.18" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.18" />
+  </ItemGroup>
+</Project>

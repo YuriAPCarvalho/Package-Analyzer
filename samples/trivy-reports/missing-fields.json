@@ -1,0 +1,13 @@
+{
+  "SchemaVersion": 2,
+  "Results": [
+    {
+      "Target": "package-lock.json",
+      "Vulnerabilities": [
+        {
+          "VulnerabilityID": "CVE-0000-0001"
+        }
+      ]
+    }
+  ]
+}

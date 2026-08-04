@@ -1,0 +1,28 @@
+{
+  "SchemaVersion": 2,
+  "Results": [
+    {
+      "Target": "Dockerfile",
+      "Type": "dockerfile",
+      "Misconfigurations": [
+        {
+          "ID": "DS002",
+          "AVDID": "DS-0002",
+          "Type": "Dockerfile Security Check",
+          "Title": "Root user",
+          "Description": "Container runs as root.",
+          "Severity": "HIGH",
+          "PrimaryURL": "https://example.test/DS-0002",
+          "CauseMetadata": {
+            "StartLine": 4,
+            "Code": {
+              "Lines": [
+                { "Number": 4, "Content": "USER root", "IsCause": true }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
