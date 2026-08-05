@@ -2,7 +2,7 @@ namespace TrivyProjectManager.Application.DTOs;
 
 public sealed class AppSettings
 {
-    public string ApplicationName { get; set; } = "Package-Analyzer by: YuriAPCarvalho";
+    public string ApplicationName { get; set; } = "Package Analyzer";
     public string? TrivyPath { get; set; }
     public bool AutoInstallTrivy { get; set; } = true;
     public bool AutoUpdateTrivyOnStartup { get; set; } = true;

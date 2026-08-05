@@ -56,7 +56,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
         _updateCommandService = updateCommandService;
     }
 
-    public string AppTitle => "Package-Analyzer by: YuriAPCarvalho";
+    public string AppTitle => "Package Analyzer";
     public ObservableCollection<ProjectCardViewModel> Projects { get; } = [];
     public ObservableCollection<FindingRowViewModel> Findings { get; } = [];
     public ObservableCollection<FindingRowViewModel> MisconfigurationFindings { get; } = [];

@@ -449,7 +449,7 @@
                 FontSize="16"
                 TextWrapping="Wrap"
                 TextAlignment="Justify"
-                Text="O Package-Analyzer é uma ferramenta desktop desenvolvida por YuriAPCarvalho para auxiliar desenvolvedores e equipes de tecnologia na identificação, análise e gerenciamento de vulnerabilidades em projetos de software." />
+                Text="O Package Analyzer é uma ferramenta desktop desenvolvida por YuriAPCarvalho para auxiliar desenvolvedores e equipes de tecnologia na identificação, análise e gerenciamento de vulnerabilidades em projetos de software." />
 
             <TextBlock
                 FontSize="16"
@@ -467,7 +467,7 @@
                 FontSize="16"
                 TextWrapping="Wrap"
                 TextAlignment="Justify"
-                Text="O Package-Analyzer é um projeto independente desenvolvido e mantido por YuriAPCarvalho." />
+                Text="O Package Analyzer é um projeto independente desenvolvido e mantido por YuriAPCarvalho." />
 
             <!-- Privacidade -->
             <TextBlock Text="Privacidade"
@@ -479,7 +479,7 @@
                 FontSize="16"
                 TextWrapping="Wrap"
                 TextAlignment="Justify"
-                Text="O Package-Analyzer foi desenvolvido seguindo o conceito Local First. Todas as análises são executadas localmente e a aplicação não envia automaticamente código-fonte, projetos, relatórios, nomes de arquivos ou caminhos locais para serviços externos." />
+                Text="O Package Analyzer foi desenvolvido seguindo o conceito Local First. Todas as análises são executadas localmente e a aplicação não envia automaticamente código-fonte, projetos, relatórios, nomes de arquivos ou caminhos locais para serviços externos." />
 
             <TextBlock
                 FontSize="16"
@@ -505,13 +505,6 @@
                 HorizontalAlignment="Center"
                 FontSize="13"
                 Opacity="0.70"
-                Margin="0,8,0,0"
-                Text="Package-Analyzer • Desenvolvido por YuriAPCarvalho" />
-
-            <TextBlock
-                HorizontalAlignment="Center"
-                FontSize="13"
-                Opacity="0.70"
                 Text="{Binding ApplicationInstalledVersion}" />
 
         </StackPanel>
@@ -519,5 +512,27 @@
 </TabItem>
       </TabControl>
     </Grid>
+    <StackPanel Grid.ColumnSpan="2"
+                Orientation="Horizontal"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Bottom"
+                Margin="0,0,18,10"
+                Opacity="0.74">
+      <TextBlock Text="Desenvolvido por "
+                 FontSize="12"
+                 VerticalAlignment="Center" />
+      <Button Content="YuriAPCarvalho"
+              Command="{Binding OpenReferenceCommand}"
+              CommandParameter="https://github.com/YuriAPCarvalho"
+              Background="Transparent"
+              BorderThickness="0"
+              Padding="0"
+              FontSize="12"
+              Foreground="#45B7FF"
+              VerticalAlignment="Center" />
+      <TextBlock Text=" © 2026"
+                 FontSize="12"
+                 VerticalAlignment="Center" />
+    </StackPanel>
   </Grid>
 </Window>

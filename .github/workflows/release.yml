@@ -68,7 +68,7 @@ jobs:
         run: |
           vpk pack `
             --packId YuriAPCarvalho.PackageAnalyzer `
-            --packTitle "Package-Analyzer" `
+            --packTitle "Package Analyzer" `
             --packVersion ${{ steps.version.outputs.version }} `
             --packDir artifacts\publish\win-x64 `
             --mainExe Package-Analyzer.exe `
@@ -90,5 +90,5 @@ jobs:
             --repoUrl https://github.com/YuriAPCarvalho/Package-Analyzer-Download `
             --token ${{ secrets.PUBLIC_RELEASE_TOKEN }} `
             --publish `
-            --releaseName "Package-Analyzer ${{ steps.version.outputs.version }}" `
+            --releaseName "Package Analyzer ${{ steps.version.outputs.version }}" `
             --tag ${{ github.ref_name }}
