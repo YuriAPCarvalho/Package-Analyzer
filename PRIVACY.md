@@ -1,37 +1,38 @@
-# Politica de Privacidade
+# Privacy Policy
 
-O Package-Analyzer foi desenvolvido com uma abordagem local-first.
+Package-Analyzer is designed with a local-first approach.
 
-A aplicacao nao envia automaticamente codigo-fonte, relatorios, nomes de projetos, caminhos locais ou resultados de analises para servicos externos.
+The application does not automatically transmit source code, reports, project names, local paths, or scan results to external services.
 
-Os dados da aplicacao, incluindo configuracoes, historico e relatorios, permanecem armazenados no computador do usuario.
+Application data, including settings, history, and reports, remains stored on the user's computer.
 
-Por padrao, os dados locais ficam em:
+By default, local data is stored at:
 
 - `%LOCALAPPDATA%\TrivyProjectManager\data\trivy-project-manager.db`
 - `%LOCALAPPDATA%\TrivyProjectManager\settings.json`
 - `%LOCALAPPDATA%\TrivyProjectManager\Projects\<project-id>\reports\`
 - `%LOCALAPPDATA%\TrivyProjectManager\Projects\<project-id>\logs\`
 
-Quando o usuario habilita armazenamento dentro do projeto, relatorios e logs podem ser gravados em `.security/trivy/`.
+When the user enables in-project storage, reports and logs may be written to `.security/trivy/`.
 
-## Acesso a internet
+## Internet access
 
-A aplicacao pode acessar a internet para:
+The application may access the internet to:
 
-- verificar e baixar atualizacoes oficiais do Package-Analyzer;
-- obter ou atualizar o Trivy gerenciado localmente;
-- permitir que o Trivy atualize bases publicas de vulnerabilidades;
-- abrir referencias externas quando o usuario solicitar explicitamente.
+- Check for and download official Package-Analyzer updates.
+- Obtain or update the locally managed Trivy installation.
+- Allow Trivy to update its public vulnerability databases.
+- Query NVD, OSV, or GitHub Advisory for optional vulnerability enrichment when the user enables it.
+- Open external references when explicitly requested by the user.
 
-O enriquecimento externo por NVD, OSV ou GitHub Advisory e opcional e vem desativado por padrao. Quando o usuario habilita esse recurso, o Package-Analyzer consulta somente identificadores publicos de vulnerabilidade, como CVE ou GHSA. Codigo-fonte, caminhos locais, relatorios completos e nomes de projetos nao sao enviados durante essas consultas.
+External enrichment through NVD, OSV, or GitHub Advisory is optional and disabled by default. When the user enables this feature, Package-Analyzer queries only public vulnerability identifiers such as CVE or GHSA. Source code, local paths, complete reports, and project names are not transmitted during these requests.
 
-O token GitHub Advisory, quando informado pelo usuario, e armazenado localmente em `%LOCALAPPDATA%\TrivyProjectManager\settings.json` e nunca deve ser versionado no repositorio.
+If the user provides a GitHub Advisory token, it is stored locally in `%LOCALAPPDATA%\TrivyProjectManager\settings.json` and must never be committed to the repository.
 
-## Segredos
+## Secrets
 
-Possiveis segredos encontrados nas analises sao exibidos e armazenados de forma mascarada sempre que processados pelo Package-Analyzer.
+Potential secrets found during scans are masked whenever Package-Analyzer processes them for display or storage.
 
-## Telemetria
+## Telemetry
 
-O Package-Analyzer nao possui login, telemetria, analytics ou upload automatico de dados.
+Package-Analyzer does not provide login functionality, collect telemetry or analytics, or automatically upload data.

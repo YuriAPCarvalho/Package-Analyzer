@@ -1,180 +1,176 @@
 # Package-Analyzer
 
-**Autor:** YuriAPCarvalho
+**Author:** YuriAPCarvalho
 
 **SPDX-License-Identifier:** MIT
 
 [![Release](https://github.com/YuriAPCarvalho/Package-Analyzer/actions/workflows/release.yml/badge.svg)](https://github.com/YuriAPCarvalho/Package-Analyzer/actions/workflows/release.yml)
 [![GitHub release](https://img.shields.io/github/v/release/YuriAPCarvalho/Package-Analyzer)](https://github.com/YuriAPCarvalho/Package-Analyzer/releases/latest)
-[![Licença: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Windows](https://img.shields.io/badge/platform-Windows-0078d4.svg)](#instalação)
-[![.NET](https://img.shields.io/badge/.NET-9.0-512bd4.svg)](#desenvolvimento)
-[![Código Aberto](https://img.shields.io/badge/status-open%20source-brightgreen.svg)](CONTRIBUTING.md)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Windows](https://img.shields.io/badge/platform-Windows-0078d4.svg)](#installation)
+[![.NET](https://img.shields.io/badge/.NET-9.0-512bd4.svg)](#development)
+[![Open source](https://img.shields.io/badge/status-open%20source-brightgreen.svg)](CONTRIBUTING.md)
 
-O **Package-Analyzer** é uma aplicação desktop desenvolvida para análise local de segurança em projetos de software. A ferramenta automatiza a identificação de vulnerabilidades conhecidas, configurações inseguras e segredos expostos, além de organizar os resultados das análises para facilitar a correção dos problemas encontrados.
+**Package-Analyzer** is a desktop application for running local security scans on software projects. It automates the detection of known vulnerabilities, misconfigurations, and exposed secrets, then organizes the findings to help users address the identified issues.
 
-O aplicativo utiliza o **Trivy** como um de seus mecanismos de análise. O Trivy é um projeto de código aberto mantido pela **Aqua Security**.
+The application uses **Trivy** as one of its scanning engines. Trivy is an open-source project maintained by **Aqua Security**.
 
-> **Aviso:** O Package-Analyzer é um projeto independente de código aberto e não possui qualquer vínculo, parceria ou endosso da Aqua Security.
-
----
-
-# Funcionalidades
-
-- Cadastro e gerenciamento de projetos locais.
-- Detecção automática de projetos .NET, NPM, pnpm e Yarn.
-- Análise rápida utilizando o Trivy instalado localmente.
-- Análise completa com execução opcional de restauração de dependências, instalação, compilação e testes antes da verificação.
-- Painel de indicadores contendo:
-  - Vulnerabilidades por severidade.
-  - Vulnerabilidades únicas.
-  - Configurações inseguras (_Misconfigurations_).
-  - Segredos identificados (_Secrets_).
-
-- Detalhamento de vulnerabilidades (CVE e GHSA), incluindo:
-  - Pacote afetado.
-  - Versão instalada.
-  - Versão corrigida.
-  - Referências oficiais.
-
-- Agrupamento automático de ocorrências equivalentes.
-- Histórico de análises com comparação entre execuções.
-- Identificação de vulnerabilidades:
-  - Novas.
-  - Existentes.
-  - Regressões.
-  - Resolvidas.
-
-- Abas específicas para configurações inseguras e segredos.
-- Ocultação automática de segredos antes da exibição e do armazenamento.
-- Banco de dados SQLite armazenado localmente.
-- Atualizações automáticas utilizando Velopack.
-- Instalador oficial para Windows x64.
+> **Notice:** Package-Analyzer is an independent open-source project and is not affiliated with, partnered with, or endorsed by Aqua Security.
 
 ---
 
-# Capturas de tela
+## Features
 
-As imagens públicas do aplicativo devem ser armazenadas em:
+- Register and manage local projects.
+- Automatically detect .NET, npm, pnpm, and Yarn projects.
+- Run quick scans with a locally installed Trivy executable.
+- Run full scans that can optionally restore or install dependencies, build the project, and run tests before scanning.
+- View a dashboard with:
+  - Vulnerabilities by severity.
+  - Unique vulnerabilities.
+  - Misconfigurations.
+  - Detected secrets.
+- Review vulnerability details for CVE and GHSA findings, including:
+  - Affected package.
+  - Installed version.
+  - Fixed version.
+  - Official references.
+- Automatically group equivalent occurrences.
+- Compare scans and review scan history.
+- Classify vulnerabilities as:
+  - New.
+  - Existing.
+  - Regressed.
+  - Resolved.
+- Review misconfigurations and secrets in dedicated tabs.
+- Automatically mask secrets before displaying or storing them.
+- Store application data in a local SQLite database.
+- Check for and install application updates through Velopack.
+- Use an official installer for Windows x64.
+
+---
+
+## Screenshots
+
+Public application screenshots should be stored in:
 
 ```text
 docs/images/
 ```
 
-Quando novas capturas de tela forem adicionadas, substitua esta observação pelas imagens correspondentes.
+Replace this note with the corresponding images when screenshots become available.
 
 ---
 
-# Instalação
+## Installation
 
-O Package-Analyzer é distribuído inicialmente para **Windows x64**.
+Package-Analyzer is currently distributed for **Windows x64**.
 
-## Passo a passo
+### Steps
 
-1. Acesse a página oficial de versões:
+1. Open the official releases page:
 
    https://github.com/YuriAPCarvalho/Package-Analyzer/releases/latest
 
-2. Baixe o arquivo:
+2. Download:
 
-```text
-YuriAPCarvalho.PackageAnalyzer-stable-Setup.exe
-```
+   ```text
+   YuriAPCarvalho.PackageAnalyzer-stable-Setup.exe
+   ```
 
-3. Verifique o hash SHA-256 disponível no arquivo `SHA256SUMS.txt`.
+3. Verify its SHA-256 hash against the value in `SHA256SUMS.txt`.
 
-4. Execute o instalador.
-
----
-
-# Aviso de segurança
-
-O aplicativo ainda **não possui assinatura digital**.
-
-Durante a instalação ou na primeira execução, o Windows SmartScreen poderá exibir um aviso de segurança.
-
-Para garantir a autenticidade do arquivo:
-
-- Faça o download somente pelo repositório oficial do GitHub.
-- Verifique o hash SHA-256 publicado juntamente com cada versão.
+4. Run the installer.
 
 ---
 
-# Dados armazenados localmente
+## Security notice
 
-Banco de dados SQLite
+The application is **not yet digitally signed**.
+
+Windows SmartScreen may display a security warning during installation or the first launch.
+
+To verify the file's authenticity:
+
+- Download it only from the official GitHub repository.
+- Verify the SHA-256 hash published with each release.
+
+---
+
+## Locally stored data
+
+SQLite database:
 
 ```text
 %LOCALAPPDATA%\TrivyProjectManager\data\trivy-project-manager.db
 ```
 
-Configurações
+Settings:
 
 ```text
 %LOCALAPPDATA%\TrivyProjectManager\settings.json
 ```
 
-Relatórios
+Reports:
 
 ```text
 %LOCALAPPDATA%\TrivyProjectManager\Projects\<project-id>\reports\
 ```
 
-Logs
+Logs:
 
 ```text
 %LOCALAPPDATA%\TrivyProjectManager\Projects\<project-id>\logs\
 ```
 
-Armazenamento dentro do projeto (opcional)
+Optional in-project storage:
 
 ```text
 .security/trivy/
 ```
 
-A desinstalação remove apenas o aplicativo. Os dados armazenados em `%LOCALAPPDATA%\TrivyProjectManager` podem permanecer no computador para preservar o histórico das análises e as configurações do usuário.
+Uninstalling removes only the application. Data under `%LOCALAPPDATA%\TrivyProjectManager` may remain on the computer to preserve scan history and user settings.
 
 ---
 
-# Privacidade
+## Privacy
 
-O Package-Analyzer:
+Package-Analyzer:
 
-- Não exige cadastro.
-- Não exige autenticação.
-- Não coleta telemetria.
-- Não envia automaticamente código-fonte.
-- Não envia nomes de projetos.
-- Não envia caminhos locais.
-- Não envia relatórios.
-- Não envia resultados das análises.
+- Does not require registration.
+- Does not require authentication.
+- Does not collect telemetry.
+- Does not automatically transmit source code.
+- Does not transmit project names.
+- Does not transmit local paths.
+- Does not transmit reports.
+- Does not transmit scan results.
 
-O acesso à internet ocorre somente quando necessário para:
+The application accesses the internet only when needed to:
 
-- Verificar novas versões do Package-Analyzer.
-- Baixar ou atualizar o Trivy gerenciado pelo aplicativo.
-- Atualizar a base pública de vulnerabilidades do Trivy.
-- Abrir referências externas solicitadas pelo usuário.
+- Check for new Package-Analyzer versions.
+- Download or update the application-managed Trivy installation.
+- Allow Trivy to update its public vulnerability databases.
+- Query NVD, OSV, or GitHub Advisory for optional vulnerability enrichment when the user enables it.
+- Open external references requested by the user.
 
-O enriquecimento das informações por meio da NVD, OSV ou GitHub Advisory é opcional e permanece desativado por padrão.
+External enrichment through NVD, OSV, or GitHub Advisory is optional and disabled by default.
 
-Quando habilitado, apenas identificadores públicos, como **CVE** e **GHSA**, são consultados. Nenhum conteúdo do projeto analisado é enviado.
+When enrichment is enabled, the application queries only public identifiers such as **CVE** and **GHSA**. It does not transmit content from the scanned project.
 
-Mais informações em:
-
-- [PRIVACY.md](PRIVACY.md)
+For more information, see [PRIVACY.md](PRIVACY.md).
 
 ---
 
-# Desenvolvimento
+## Development
 
-## Requisitos
+### Requirements
 
 - .NET SDK 9.0
 - Windows
-- Trivy instalado localmente ou instalação automática habilitada
+- A local Trivy installation or automatic installation enabled
 
-## Comandos principais
+### Common commands
 
 ```powershell
 dotnet restore TrivyProjectManager.sln -m:1 -nr:false
@@ -186,7 +182,7 @@ dotnet test TrivyProjectManager.sln --configuration Release --no-build -m:1 -nr:
 dotnet run --project src\TrivyProjectManager.App\TrivyProjectManager.App.csproj
 ```
 
-## Estrutura do projeto
+### Project structure
 
 ```text
 src/
@@ -203,9 +199,9 @@ samples/
 └── trivy-reports/
 ```
 
-O aplicativo procura automaticamente pelo executável `trivy.exe` no `PATH` do sistema ou no caminho configurado pelo usuário.
+The application automatically looks for `trivy.exe` in the system `PATH` or at the path configured by the user.
 
-Quando a instalação automática estiver habilitada, o Trivy será baixado para:
+When automatic installation is enabled, Trivy is downloaded to:
 
 ```text
 %LOCALAPPDATA%\TrivyProjectManager\tools\trivy\trivy.exe
@@ -213,13 +209,13 @@ Quando a instalação automática estiver habilitada, o Trivy será baixado para
 
 ---
 
-# Publicação de versões
+## Publishing releases
 
-As versões oficiais são disponibilizadas em:
+Official releases are available at:
 
 https://github.com/YuriAPCarvalho/Package-Analyzer/releases
 
-Para criar uma nova versão:
+To create a release:
 
 ```powershell
 $tag = "v0.1.1"
@@ -229,60 +225,58 @@ git tag $tag
 git push origin $tag
 ```
 
-Cada versão deve seguir o padrão:
+Every release tag must follow this pattern:
 
 ```text
 vMAJOR.MINOR.PATCH
 ```
 
-Também deve possuir uma entrada correspondente no arquivo `CHANGELOG.md`.
+It must also have a corresponding entry in `CHANGELOG.md`.
 
-Exemplo:
+Example:
 
 ```md
 ## [0.1.1]
 ```
 
-As etiquetas (**tags**) de versão são imutáveis e nunca devem ser reutilizadas.
+Release tags are immutable and must never be moved or reused.
 
-A etiqueta `v0.1.0` foi preservada apenas como registro histórico de uma tentativa de publicação anterior.
+The `v0.1.0` tag is preserved only as a historical record of an earlier publishing attempt.
 
-O fluxo automatizado localizado em:
+The automated workflow at:
 
 ```text
 .github/workflows/release.yml
 ```
 
-é responsável por:
+performs the following tasks:
 
-- Restaurar as dependências.
-- Compilar a aplicação.
-- Executar os testes.
-- Publicar a versão final.
-- Empacotar utilizando Velopack.
-- Gerar o arquivo `SHA256SUMS.txt`.
-- Publicar automaticamente os artefatos na página de versões do GitHub.
-
----
-
-# Assinatura de código
-
-A integração com o **SignPath Foundation** está prevista, mas ainda aguarda aprovação.
-
-Mais informações em:
-
-- [CODE_SIGNING_POLICY.md](CODE_SIGNING_POLICY.md)
+- Restores dependencies.
+- Builds the application.
+- Runs the tests.
+- Publishes the final release.
+- Creates Velopack packages.
+- Generates `SHA256SUMS.txt`.
+- Publishes the artifacts to the GitHub releases page.
 
 ---
 
-# Documentação
+## Code signing
 
-- [Política de Privacidade](PRIVACY.md)
-- [Política de Segurança](SECURITY.md)
-- [Guia de Contribuição](CONTRIBUTING.md)
-- [Código de Conduta](CODE_OF_CONDUCT.md)
-- [Política de Assinatura de Código](CODE_SIGNING_POLICY.md)
-- [Avisos sobre Componentes de Terceiros](THIRD_PARTY_NOTICES.md)
-- [Licença](LICENSE)
-- [Lista de Verificação do SignPath](docs/SIGNPATH_APPLICATION_CHECKLIST.md)
-- [Relatório de Preparação para Código Aberto](docs/OPEN_SOURCE_PREPARATION_REPORT.md)
+Integration with the **SignPath Foundation** is planned but is still awaiting approval.
+
+For more information, see [CODE_SIGNING_POLICY.md](CODE_SIGNING_POLICY.md).
+
+---
+
+## Documentation
+
+- [Privacy Policy](PRIVACY.md)
+- [Security Policy](SECURITY.md)
+- [Contributing Guide](CONTRIBUTING.md)
+- [Code of Conduct](CODE_OF_CONDUCT.md)
+- [Code Signing Policy](CODE_SIGNING_POLICY.md)
+- [Third-party Notices](THIRD_PARTY_NOTICES.md)
+- [License](LICENSE)
+- [SignPath Foundation Application Checklist](docs/SIGNPATH_APPLICATION_CHECKLIST.md)
+- [Open-source Preparation Report](docs/OPEN_SOURCE_PREPARATION_REPORT.md)

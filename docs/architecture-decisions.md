@@ -1,34 +1,34 @@
-# Decisões Arquiteturais
+# Architecture Decisions
 
 ## Local-first
 
-A aplicação não implementa login, telemetria, analytics, uploads ou enriquecimento externo automático. O único componente que pode acessar internet é o Trivy local, para atualizar a base pública de vulnerabilidades.
+The application does not provide login functionality, collect telemetry or analytics, or automatically upload project content. Network access is limited to user-initiated or application-supporting operations: checking for Package-Analyzer updates, downloading the managed Trivy executable, allowing Trivy to update its public vulnerability databases, opening external references, and optionally enriching public vulnerability identifiers through NVD, OSV, or GitHub Advisory. External enrichment is disabled by default.
 
-## Separação em Camadas
+## Layered architecture
 
-- `Domain` contém entidades e enums sem dependências externas.
-- `Application` contém contratos, DTOs do Trivy, parser tolerante, deduplicação, contadores, comparação e validações.
-- `Infrastructure` implementa EF Core SQLite, execução de processos, detecção de projetos, paths, retenção e Trivy.
-- `App` contém Avalonia, ViewModels, DI, dialogs e logs locais.
+- `Domain` contains entities and enums without external dependencies.
+- `Application` contains contracts, Trivy DTOs, the fault-tolerant parser, deduplication, counters, comparison logic, and validation.
+- `Infrastructure` implements EF Core SQLite persistence, process execution, project detection, paths, retention, and Trivy integration.
+- `App` contains the Avalonia UI, view models, dependency injection, dialogs, and local logging.
 
-## Execução de Processos
+## Process execution
 
-Comandos são persistidos com executável e argumentos separados. A execução usa `ProcessStartInfo.ArgumentList`, `UseShellExecute=false`, stdout/stderr assíncronos, timeout e cancelamento.
+Commands are stored with the executable and arguments separated. Execution uses `ProcessStartInfo.ArgumentList`, `UseShellExecute=false`, asynchronous standard output and error streams, timeouts, and cancellation.
 
-## Deduplicação
+## Deduplication
 
-A chave lógica de finding usa:
+The logical finding key uses:
 
 ```text
-FindingType | VulnerabilityId ou título/target | PackageName | InstalledVersion
+FindingType | VulnerabilityId or title/target | PackageName | InstalledVersion
 ```
 
-Ocorrências em targets diferentes são armazenadas em `FindingOccurrence`, evitando inflar o resumo principal.
+Occurrences in different targets are stored as `FindingOccurrence` records so they do not inflate the main summary.
 
 ## SQLite
 
-O banco fica em `%LOCALAPPDATA%\TrivyProjectManager\data\`. Relatórios e logs podem ficar no armazenamento central configurado ou em `.security/trivy/` dentro do projeto.
+The database is stored under `%LOCALAPPDATA%\TrivyProjectManager\data\`. Reports and logs may use the configured central storage or `.security/trivy/` within the project.
 
 ## Migrations
 
-A migration inicial é mantida no projeto de infraestrutura. Como foi criada manualmente neste MVP, a aplicação ignora apenas o warning de pending model changes do snapshot manual.
+The initial migration is maintained in the infrastructure project. Because it was created manually for this MVP, the application suppresses only the pending-model-changes warning associated with the manually maintained snapshot.

@@ -1,25 +1,25 @@
 # Contributing
 
-Obrigado por considerar contribuir com o Package-Analyzer.
+Thank you for considering a contribution to Package-Analyzer.
 
 ## Issues
 
-Use issues para bugs, melhorias e discussoes tecnicas. Antes de abrir uma issue, verifique se ja existe uma conversa relacionada.
+Use issues to report bugs, propose improvements, or start technical discussions. Before opening an issue, check whether a related discussion already exists.
 
-Inclua somente logs, screenshots e exemplos sanitizados. Nunca inclua tokens, senhas, chaves privadas, dados de clientes, caminhos sensiveis ou relatorios com secrets reais.
+Include only sanitized logs, screenshots, and examples. Never include tokens, passwords, private keys, customer data, sensitive paths, or reports containing real secrets.
 
 ## Branches
 
-Use nomes curtos e descritivos:
+Use short, descriptive branch names:
 
-- `feat/<descricao>`
-- `fix/<descricao>`
-- `docs/<descricao>`
-- `chore/<descricao>`
+- `feat/<description>`
+- `fix/<description>`
+- `docs/<description>`
+- `chore/<description>`
 
 ## Commits
 
-Prefixos sugeridos:
+Suggested prefixes:
 
 - `feat:`
 - `fix:`
@@ -30,7 +30,7 @@ Prefixos sugeridos:
 - `ci:`
 - `chore:`
 
-## Desenvolvimento local
+## Local development
 
 ```powershell
 dotnet restore TrivyProjectManager.sln -m:1 -nr:false
@@ -40,13 +40,13 @@ dotnet test TrivyProjectManager.sln --configuration Release --no-build -m:1 -nr:
 
 ## Pull requests
 
-Pull requests devem:
+Pull requests must:
 
-- explicar o problema e a solucao;
-- manter o projeto compilavel;
-- atualizar testes quando houver mudanca de comportamento;
-- atualizar documentacao quando a experiencia do usuario, privacidade, release ou instalacao mudar;
-- incluir screenshot para mudancas visuais;
-- confirmar que nenhuma credencial foi adicionada.
+- Explain the problem and the proposed solution.
+- Keep the project buildable.
+- Update tests when behavior changes.
+- Update documentation when the user experience, privacy behavior, release process, or installation process changes.
+- Include screenshots for visual changes.
+- Confirm that no credentials were added.
 
-Mudancas em `.github/workflows/`, scripts de release, instalador, updater, assinatura de codigo ou politicas de seguranca exigem revisao especial do mantenedor.
+Changes to `.github/workflows/`, release scripts, the installer, the updater, code signing, or security policies require special maintainer review.

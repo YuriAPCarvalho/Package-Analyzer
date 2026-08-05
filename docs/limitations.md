@@ -1,9 +1,9 @@
-# Limitações Atuais
+# Current Limitations
 
-- Cadastro de projeto é direto após seleção de pasta; correções manuais ficam na aba `Configurações`.
-- O dashboard usa o último scan concluído do projeto.
-- A aba `Histórico` lista scans, mas abrir um scan antigo como visão isolada ainda não foi implementado.
-- Misconfigurations e secrets são exibidos em abas próprias, mas os componentes visuais ainda são simples.
-- Secrets são mascarados antes da persistência do finding e o JSON salvo é redigido nos campos `Secrets.Match` e `Code.Lines.Content`.
-- Retenção automática remove scans antigos e seus arquivos associados conforme a configuração.
-- O pacote `Microsoft.EntityFrameworkCore.Design` foi removido do runtime para evitar um target transitivo problemático neste ambiente; a migration inicial permanece versionada manualmente.
+- A project is registered immediately after its folder is selected; manual adjustments are available on the `Settings` tab.
+- The dashboard uses the project's latest completed scan.
+- The `History` tab lists scans, but opening an older scan as a standalone view has not yet been implemented.
+- Misconfigurations and secrets appear on dedicated tabs, but their visual components are still basic.
+- Secrets are masked before a finding is persisted, and the saved JSON is redacted in the `Secrets.Match` and `Code.Lines.Content` fields.
+- Automatic retention removes older scans and their associated files according to the configured policy.
+- The `Microsoft.EntityFrameworkCore.Design` package was removed from the runtime to avoid a problematic transitive target in this environment; the initial migration remains manually versioned.

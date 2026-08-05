@@ -35,5 +35,5 @@
 
 ## [0.1.0] - 2026-08-05
 
-- Tag de preparacao criada antes da migracao para o modelo de repositorio unico.
-- A publicacao dos artefatos falhou no workflow legado; nenhuma GitHub Release foi publicada para esta tag.
+- Preparation tag created before the migration to the single-repository model.
+- Artifact publishing failed in the legacy workflow; no GitHub release was published for this tag.

@@ -1,55 +1,55 @@
-# SignPath Foundation application checklist
+# SignPath Foundation Application Checklist
 
-- [x] Repositorio principal publico
-- [x] Licenca MIT detectada pelo GitHub
-- [x] Codigo-fonte completo publicado
-- [x] Scripts de build publicados
-- [x] GitHub Actions publicado
-- [x] README completo
-- [x] Pagina de download documentada no proprio GitHub Releases
-- [x] Primeira release publica disponivel
-- [x] Politica de privacidade publicada
-- [x] Code signing policy publicada
-- [x] Papeis de committer/reviewer/approver publicados
-- [ ] 2FA habilitado no GitHub
-- [ ] 2FA preparado para a conta SignPath
-- [x] Build automatizado e verificavel
-- [x] Metadados do executavel consistentes
-- [x] Changelog disponivel
-- [x] Checksums SHA-256 publicados
-- [x] THIRD_PARTY_NOTICES revisado
-- [x] Nenhum segredo no codigo ou historico
-- [x] Release aponta para o codigo-fonte exato
-- [x] Uma release ja foi publicada no formato que devera ser assinado
-- [ ] Formulario da SignPath Foundation enviado manualmente
+- [x] Main repository is public
+- [x] GitHub detects the MIT license
+- [x] Complete source code is published
+- [x] Build scripts are published
+- [x] GitHub Actions workflows are published
+- [x] README is complete
+- [x] Download page is documented through GitHub Releases in the main repository
+- [x] First public release is available
+- [x] Privacy policy is published
+- [x] Code signing policy is published
+- [x] Committer, reviewer, and approver roles are published
+- [ ] 2FA is enabled on GitHub
+- [ ] 2FA is configured for the SignPath account
+- [x] Build is automated and verifiable
+- [x] Executable metadata is consistent
+- [x] Changelog is available
+- [x] SHA-256 checksums are published
+- [x] `THIRD_PARTY_NOTICES.md` has been reviewed
+- [x] No secrets exist in the code or repository history
+- [x] Release points to the exact source code
+- [x] A release has been published in the format that will be signed
+- [ ] SignPath Foundation application has been submitted manually
 
-## Estado verificado em 2026-08-05
+## Status verified on 2026-08-05
 
-- O repositorio `YuriAPCarvalho/Package-Analyzer` esta publico e o GitHub detecta a licenca MIT.
-- O repositorio `YuriAPCarvalho/Package-Analyzer-Download` nao foi encontrado e nao participa mais do fluxo.
-- A tag `v0.1.0` permanece no commit `14d075a`, mas nenhuma GitHub Release foi publicada para ela.
-- O CI e o workflow de release estao publicados e foram executados com sucesso.
-- A release `v0.1.1` foi publicada a partir do commit `eee351b2ea5a57e4325800a97029d2544e69c235`.
-- `SHA256SUMS.txt` foi publicado e seus seis hashes coincidem com os digests dos assets armazenados pelo GitHub.
-- Private Vulnerability Reporting permanece desativado e deve ser habilitado manualmente.
-- Os artefatos permanecem sem assinatura; a integracao SignPath Foundation continua como planned / application pending.
+- The `YuriAPCarvalho/Package-Analyzer` repository is public, and GitHub detects the MIT license.
+- The `YuriAPCarvalho/Package-Analyzer-Download` repository was not found and is no longer part of the release process.
+- The `v0.1.0` tag remains on commit `14d075a`, but no GitHub release was published for it.
+- The CI and release workflows are published and have completed successfully.
+- Release `v0.1.1` was published from commit `eee351b2ea5a57e4325800a97029d2544e69c235`.
+- `SHA256SUMS.txt` was published, and its six hashes match the digests of the assets stored by GitHub.
+- Private Vulnerability Reporting remains disabled and must be enabled manually.
+- Artifacts remain unsigned; SignPath Foundation integration remains planned / application pending.
 
-## Informacoes para preencher manualmente
+## Information to enter manually
 
-- URL do repositorio: `https://github.com/YuriAPCarvalho/Package-Analyzer`
-- URL da pagina de download: `https://github.com/YuriAPCarvalho/Package-Analyzer/releases`
-- Descricao do projeto: aplicacao desktop local-first para analise de seguranca de projetos com Trivy local, historico, comparacao de scans e recomendacoes de correcao.
-- Licenca: MIT
-- Responsavel: YuriAPCarvalho / Yuri Alexandre Pires de Carvalho
+- Repository URL: `https://github.com/YuriAPCarvalho/Package-Analyzer`
+- Download page URL: `https://github.com/YuriAPCarvalho/Package-Analyzer/releases`
+- Project description: local-first desktop application for scanning project security with a local Trivy installation, scan history, scan comparison, and remediation recommendations.
+- License: MIT
+- Maintainer: YuriAPCarvalho / Yuri Alexandre Pires de Carvalho
 - Code signing policy: `CODE_SIGNING_POLICY.md`
-- Politica de privacidade: `PRIVACY.md`
-- Workflow de build: `.github/workflows/release.yml`
-- Release de exemplo: `https://github.com/YuriAPCarvalho/Package-Analyzer/releases/tag/v0.1.1`
+- Privacy policy: `PRIVACY.md`
+- Build workflow: `.github/workflows/release.yml`
+- Example release: `https://github.com/YuriAPCarvalho/Package-Analyzer/releases/tag/v0.1.1`
 
-## Pontos de atencao
+## Points requiring attention
 
-- A ativacao de 2FA e manual.
-- A ativacao de Private Vulnerability Reporting e manual.
-- A solicitacao para a SignPath Foundation e manual.
-- Cada assinatura deve exigir aprovacao manual do mantenedor.
-- `trivy.exe` e componente upstream da Aqua Security e nao deve ser tratado como binario proprio do Package-Analyzer.
+- Enabling 2FA is a manual task.
+- Enabling Private Vulnerability Reporting is a manual task.
+- Applying to the SignPath Foundation is a manual task.
+- Every signing request must require manual maintainer approval.
+- `trivy.exe` is an upstream Aqua Security component and must not be treated as a Package-Analyzer binary.

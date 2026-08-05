@@ -14,7 +14,7 @@ Describe the change and why it is needed.
 
 - [ ] No credentials, tokens, private keys, private paths, or unredacted secrets were added.
 - [ ] Documentation was updated when behavior, release, privacy, installation, or UI changed.
-- [ ] UI changes include screenshots.
+- [ ] UI changes include screenshots when applicable.
 - [ ] New behavior includes tests.
 - [ ] Workflow, release, updater, installer, and signing changes received special maintainer review.
 - [ ] The privacy policy remains accurate.

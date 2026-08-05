@@ -2,7 +2,7 @@
 
 ## Supported versions
 
-Security fixes are provided for the latest public release and the current `main` branch.
+Security fixes are provided for the latest public release and for the current `main` branch.
 
 ## Reporting a vulnerability
 
@@ -19,12 +19,12 @@ If private vulnerability reporting is not available yet, the maintainer should e
 
 ## Handling expectations
 
-Reports should include:
+Reports should include the following information:
 
-- affected version;
-- Windows version;
-- sanitized reproduction steps;
-- expected and observed behavior;
-- sanitized logs or screenshots when useful.
+- Affected Package-Analyzer version.
+- Windows version.
+- Sanitized reproduction steps.
+- Expected and observed behavior.
+- Sanitized logs or screenshots, when useful.
 
 Security-sensitive workflow, release, installer, updater, and signing changes require special maintainer review.
