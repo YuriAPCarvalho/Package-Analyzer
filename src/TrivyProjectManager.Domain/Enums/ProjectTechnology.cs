@@ -4,5 +4,7 @@ public enum ProjectTechnology
 {
     Unknown = 0,
     DotNet = 1,
-    Node = 2
+    Node = 2,
+    Java = 3,
+    Mixed = 4
 }

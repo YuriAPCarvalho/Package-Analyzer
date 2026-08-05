@@ -104,6 +104,9 @@ public sealed partial class MainWindowViewModel : ObservableObject
             {
                 OnPropertyChanged(nameof(HasSelectedProject));
                 OnPropertyChanged(nameof(UseInsideProjectStorage));
+                OnPropertyChanged(nameof(AutoDetectPreparation));
+                OnPropertyChanged(nameof(CommandsAreEditable));
+                OnPropertyChanged(nameof(PreparationTrustText));
                 RunQuickScanCommand.NotifyCanExecuteChanged();
                 RunFullScanCommand.NotifyCanExecuteChanged();
                 _ = LoadProjectDetailsAsync(value?.Id ?? Guid.Empty);
@@ -112,6 +115,27 @@ public sealed partial class MainWindowViewModel : ObservableObject
     }
 
     public bool HasSelectedProject => SelectedProject is not null;
+
+    public bool AutoDetectPreparation
+    {
+        get => SelectedProject?.Project.AutoDetectPreparation ?? true;
+        set
+        {
+            if (SelectedProject is null || SelectedProject.Project.AutoDetectPreparation == value)
+            {
+                return;
+            }
+
+            SelectedProject.Project.AutoDetectPreparation = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(CommandsAreEditable));
+        }
+    }
+
+    public bool CommandsAreEditable => !AutoDetectPreparation;
+    public string PreparationTrustText => SelectedProject?.Project.IsPreparationTrusted == true
+        ? "Projeto confiável para executar comandos de preparação."
+        : "A confiança ainda não foi concedida; será solicitada no primeiro scan completo.";
 
     public bool UseInsideProjectStorage
     {
@@ -416,7 +440,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
                 PackageManager = detection.SuggestedPackageManager,
                 StorageMode = ReportStorageMode.Central
             };
-            project.Commands.AddRange(_commandProfileService.CreateDefaultCommands(project.Technology, project.PackageManager, project.Path));
+            project.Commands.AddRange(_commandProfileService.CreateAutomaticCommands(detection));
             _dbContext.Projects.Add(project);
             await _dbContext.SaveChangesAsync();
             await ReloadProjectsAsync(project.Id, selectFirstWhenMissing: true);
@@ -444,13 +468,39 @@ public sealed partial class MainWindowViewModel : ObservableObject
             return;
         }
 
-        var confirmed = await _dialogService.ConfirmAsync(
-            "Executar scan completo",
-            "Os comandos de preparação podem executar scripts definidos pelo próprio projeto. Execute apenas projetos confiáveis.");
-        if (confirmed)
+        var project = await _dbContext.Projects.FirstAsync(item => item.Id == SelectedProject.Id);
+        if (!project.IsPreparationTrusted)
         {
-            await RunScanAsync(ScanMode.Full);
+            var confirmed = await _dialogService.ConfirmAsync(
+                "Confiar neste projeto",
+                "Os comandos de preparação podem executar scripts definidos pelo próprio projeto e acessar registries de pacotes. Confie apenas em projetos conhecidos. Esta confirmação será lembrada para este projeto.");
+            if (!confirmed)
+            {
+                return;
+            }
+
+            project.IsPreparationTrusted = true;
+            SelectedProject.Project.IsPreparationTrusted = true;
+            await _dbContext.SaveChangesAsync();
+            OnPropertyChanged(nameof(PreparationTrustText));
         }
+
+        await RunScanAsync(ScanMode.Full);
+    }
+
+    [RelayCommand]
+    private async Task RevokePreparationTrustAsync()
+    {
+        if (SelectedProject is null)
+        {
+            return;
+        }
+
+        var project = await _dbContext.Projects.FirstAsync(item => item.Id == SelectedProject.Id);
+        project.IsPreparationTrusted = false;
+        SelectedProject.Project.IsPreparationTrusted = false;
+        await _dbContext.SaveChangesAsync();
+        OnPropertyChanged(nameof(PreparationTrustText));
     }
 
     [RelayCommand]
@@ -799,7 +849,10 @@ public sealed partial class MainWindowViewModel : ObservableObject
         }
         NotifyCollectionStateChanged();
 
-        var lastScanId = project.Scans.Where(scan => scan.Status == ScanStatus.Succeeded).OrderByDescending(scan => scan.StartedAt).FirstOrDefault()?.Id;
+        var lastScanId = project.Scans
+            .Where(scan => scan.Status is ScanStatus.Succeeded or ScanStatus.SucceededWithWarnings)
+            .OrderByDescending(scan => scan.StartedAt)
+            .FirstOrDefault()?.Id;
         if (lastScanId is null)
         {
             return;

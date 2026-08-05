@@ -12,4 +12,5 @@ public sealed class ProjectCommand
     public bool IsEnabled { get; set; } = true;
     public bool ContinueOnError { get; set; }
     public string? WorkingDirectory { get; set; }
+    public string? PreparationTargetKey { get; set; }
 }

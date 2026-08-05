@@ -14,6 +14,8 @@ public sealed class Project
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
     public DateTimeOffset? LastScanAt { get; set; }
     public bool IsActive { get; set; } = true;
+    public bool AutoDetectPreparation { get; set; } = true;
+    public bool IsPreparationTrusted { get; set; }
     public List<ProjectCommand> Commands { get; set; } = [];
     public List<Scan> Scans { get; set; } = [];
     public List<SecurityException> SecurityExceptions { get; set; } = [];

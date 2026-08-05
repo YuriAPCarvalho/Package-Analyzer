@@ -20,5 +20,8 @@ public sealed class ProjectCardViewModel(Project project)
     public int High => LastSucceededScan?.HighCount ?? 0;
     public int Medium => LastSucceededScan?.MediumCount ?? 0;
     public int Low => LastSucceededScan?.LowCount ?? 0;
-    public Scan? LastSucceededScan => Project.Scans.Where(scan => scan.Status == ScanStatus.Succeeded).OrderByDescending(scan => scan.StartedAt).FirstOrDefault();
+    public Scan? LastSucceededScan => Project.Scans
+        .Where(scan => scan.Status is ScanStatus.Succeeded or ScanStatus.SucceededWithWarnings)
+        .OrderByDescending(scan => scan.StartedAt)
+        .FirstOrDefault();
 }

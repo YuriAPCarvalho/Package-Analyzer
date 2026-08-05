@@ -28,6 +28,17 @@ public static class RuntimeSupportService
 
     public static async Task<string?> TryBuildAlertAsync(string projectPath, ProjectTechnology technology, CancellationToken cancellationToken = default)
     {
+        if (technology == ProjectTechnology.Mixed)
+        {
+            var alerts = new[]
+            {
+                await BuildDotNetAlertAsync(projectPath, cancellationToken),
+                await BuildNodeAlertAsync(projectPath, cancellationToken)
+            }.Where(alert => !string.IsNullOrWhiteSpace(alert));
+            var combined = string.Join(Environment.NewLine, alerts);
+            return string.IsNullOrWhiteSpace(combined) ? null : combined;
+        }
+
         return technology switch
         {
             ProjectTechnology.DotNet => await BuildDotNetAlertAsync(projectPath, cancellationToken),

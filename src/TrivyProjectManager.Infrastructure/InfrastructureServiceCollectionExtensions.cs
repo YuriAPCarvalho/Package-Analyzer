@@ -31,6 +31,7 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddScoped<ITrivyReportParser, TrivyReportParser>();
         services.AddScoped<ITrivyService, TrivyService>();
         services.AddScoped<IRetentionService, RetentionService>();
+        services.AddScoped<SecurityExceptionApplicator>();
         services.AddScoped<IScanOrchestrator, ScanOrchestrator>();
         services.AddScoped<IExternalLinkService, ExternalLinkService>();
 

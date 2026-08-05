@@ -178,6 +178,7 @@ public sealed class ParserAndDomainTests
         Assert.Equal("Nova", DisplayTextService.LifecycleStatus(FindingLifecycleStatus.New));
         Assert.Equal("Regressão", DisplayTextService.LifecycleStatus(FindingLifecycleStatus.Regression));
         Assert.Equal("Concluído", DisplayTextService.ScanStatus(ScanStatus.Succeeded));
+        Assert.Equal("Concluído com avisos", DisplayTextService.ScanStatus(ScanStatus.SucceededWithWarnings));
         Assert.Equal("Configuração incorreta", DisplayTextService.FindingType(FindingType.Misconfiguration));
         Assert.Equal("Segredo", DisplayTextService.FindingType(FindingType.Secret));
         Assert.Equal("Atualização disponível", DisplayTextService.ApplicationUpdateStatus(ApplicationUpdateStatus.UpdateAvailable));

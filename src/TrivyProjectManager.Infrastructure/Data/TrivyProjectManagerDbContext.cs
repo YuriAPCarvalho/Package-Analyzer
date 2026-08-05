@@ -36,6 +36,7 @@ public sealed class TrivyProjectManagerDbContext(DbContextOptions<TrivyProjectMa
             entity.Property(e => e.Command).HasMaxLength(260).IsRequired();
             entity.Property(e => e.Arguments).HasMaxLength(2048);
             entity.Property(e => e.WorkingDirectory).HasMaxLength(1024);
+            entity.Property(e => e.PreparationTargetKey).HasMaxLength(512);
             entity.HasIndex(e => e.ProjectId);
         });
 

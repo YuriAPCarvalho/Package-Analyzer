@@ -14,7 +14,8 @@ public static class CommandValidationService
             errors.Add("Executable is required.");
         }
 
-        if (command.Command.IndexOfAny(UnsafeExecutableCharacters) >= 0 || command.Command.Contains(' '))
+        var rootedExecutable = Path.IsPathRooted(command.Command) && File.Exists(command.Command);
+        if (command.Command.IndexOfAny(UnsafeExecutableCharacters) >= 0 || command.Command.Contains(' ') && !rootedExecutable)
         {
             errors.Add("Executable must be stored separately from arguments.");
         }

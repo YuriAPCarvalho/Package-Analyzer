@@ -22,9 +22,10 @@ The application uses **Trivy** as one of its scanning engines. Trivy is an open-
 ## Features
 
 - Register and manage local projects.
-- Automatically detect .NET, npm, pnpm, and Yarn projects.
+- Automatically detect .NET, npm, pnpm, Yarn, Maven, and Gradle projects, including mixed repositories and monorepos.
 - Run quick scans with a locally installed Trivy executable.
-- Run full scans that can optionally restore or install dependencies, build the project, and run tests before scanning.
+- Run full scans that automatically restore or install dependencies and build every detected target before scanning.
+- Keep Trivy results when a preparation target fails, marking the scan as completed with warnings.
 - View a dashboard with:
   - Vulnerabilities by severity.
   - Unique vulnerabilities.
@@ -151,6 +152,8 @@ The application accesses the internet only when needed to:
 - Check for new Package-Analyzer versions.
 - Download or update the application-managed Trivy installation.
 - Allow Trivy to update its public vulnerability databases.
+- Restore project dependencies from configured NuGet, npm, Maven, and Gradle registries during a trusted full scan.
+- Download the Maven or Gradle distribution declared by a project-owned wrapper when that wrapper is executed.
 - Query NVD, OSV, or GitHub Advisory for optional vulnerability enrichment when the user enables it.
 - Open external references requested by the user.
 
@@ -201,6 +204,10 @@ samples/
 
 The application automatically looks for `trivy.exe` in the system `PATH` or at the path configured by the user.
 
+Quick scans run Trivy without executing project commands. Full scans detect .NET, Node.js, and Java targets again before each run. The first full scan asks the user to trust the project because package installation and build commands can execute scripts supplied by that project. Trust can be revoked in project settings.
+
+Package-Analyzer does not install the .NET SDK, Node.js, or a JDK. Missing toolchains are reported per target; available targets and Trivy continue to run. Maven and Gradle wrappers committed to the project are preferred over global installations.
+
 When automatic installation is enabled, Trivy is downloaded to:
 
 ```text
@@ -218,7 +225,7 @@ https://github.com/YuriAPCarvalho/Package-Analyzer/releases
 To create a release:
 
 ```powershell
-$tag = "v0.1.1"
+$tag = "v0.2.0"
 
 git tag $tag
 
@@ -236,7 +243,7 @@ It must also have a corresponding entry in `CHANGELOG.md`.
 Example:
 
 ```md
-## [0.1.1]
+## [0.2.0]
 ```
 
 Release tags are immutable and must never be moved or reused.

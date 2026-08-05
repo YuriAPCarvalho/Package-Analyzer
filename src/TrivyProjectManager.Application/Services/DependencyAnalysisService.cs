@@ -57,12 +57,21 @@ public sealed class DependencyAnalysisService : IDependencyAnalysisService
 
     private static async Task<Dictionary<string, DirectDependency>> LoadDirectPackagesAsync(Project project, CancellationToken cancellationToken)
     {
-        return project.PackageManager switch
+        var result = new Dictionary<string, DirectDependency>(StringComparer.OrdinalIgnoreCase);
+        foreach (var packages in new[]
         {
-            PackageManagerType.DotNetCli => await LoadDotNetPackagesAsync(project.Path, cancellationToken),
-            PackageManagerType.Npm or PackageManagerType.Pnpm or PackageManagerType.Yarn => await LoadNodePackagesAsync(project.Path, cancellationToken),
-            _ => []
-        };
+            await LoadDotNetPackagesAsync(project.Path, cancellationToken),
+            await LoadNodePackagesAsync(project.Path, cancellationToken),
+            await LoadMavenPackagesAsync(project.Path, cancellationToken)
+        })
+        {
+            foreach (var package in packages)
+            {
+                result.TryAdd(package.Key, package.Value);
+            }
+        }
+
+        return result;
     }
 
     private static async Task<Dictionary<string, DirectDependency>> LoadDotNetPackagesAsync(string projectPath, CancellationToken cancellationToken)
@@ -119,34 +128,75 @@ public sealed class DependencyAnalysisService : IDependencyAnalysisService
 
     private static async Task<Dictionary<string, DirectDependency>> LoadNodePackagesAsync(string projectPath, CancellationToken cancellationToken)
     {
-        var packageJson = Path.Combine(projectPath, "package.json");
-        if (!File.Exists(packageJson))
+        var result = new Dictionary<string, DirectDependency>(StringComparer.OrdinalIgnoreCase);
+        foreach (var packageJson in Directory.EnumerateFiles(projectPath, "package.json", SearchOption.AllDirectories)
+                     .Where(path => !ContainsExcludedDirectory(projectPath, path)))
         {
-            return [];
-        }
-
-        try
-        {
-            await using var stream = File.OpenRead(packageJson);
-            using var document = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
-            var result = new Dictionary<string, DirectDependency>(StringComparer.OrdinalIgnoreCase);
-            foreach (var section in new[] { "dependencies", "devDependencies", "optionalDependencies", "peerDependencies" })
+            try
             {
-                if (document.RootElement.TryGetProperty(section, out var dependencies) && dependencies.ValueKind == JsonValueKind.Object)
+                await using var stream = File.OpenRead(packageJson);
+                using var document = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
+                foreach (var section in new[] { "dependencies", "devDependencies", "optionalDependencies", "peerDependencies" })
                 {
-                    foreach (var package in dependencies.EnumerateObject())
+                    if (document.RootElement.TryGetProperty(section, out var dependencies) && dependencies.ValueKind == JsonValueKind.Object)
                     {
-                        result.TryAdd(package.Name, new DirectDependency(package.Name, packageJson));
+                        foreach (var package in dependencies.EnumerateObject())
+                        {
+                            result.TryAdd(package.Name, new DirectDependency(package.Name, packageJson));
+                        }
                     }
                 }
             }
+            catch
+            {
+                // Ignore malformed manifests; findings remain usable.
+            }
+        }
 
-            return result;
-        }
-        catch
+        return result;
+    }
+
+    private static async Task<Dictionary<string, DirectDependency>> LoadMavenPackagesAsync(string projectPath, CancellationToken cancellationToken)
+    {
+        var result = new Dictionary<string, DirectDependency>(StringComparer.OrdinalIgnoreCase);
+        foreach (var pom in Directory.EnumerateFiles(projectPath, "pom.xml", SearchOption.AllDirectories)
+                     .Where(path => !ContainsExcludedDirectory(projectPath, path)))
         {
-            return [];
+            try
+            {
+                await using var stream = File.OpenRead(pom);
+                var document = await XDocument.LoadAsync(stream, LoadOptions.None, cancellationToken);
+                foreach (var dependency in document.Descendants().Where(element => element.Name.LocalName == "dependency"))
+                {
+                    var group = dependency.Elements().FirstOrDefault(element => element.Name.LocalName == "groupId")?.Value.Trim();
+                    var artifact = dependency.Elements().FirstOrDefault(element => element.Name.LocalName == "artifactId")?.Value.Trim();
+                    if (string.IsNullOrWhiteSpace(artifact))
+                    {
+                        continue;
+                    }
+
+                    result.TryAdd(artifact, new DirectDependency(artifact, pom));
+                    if (!string.IsNullOrWhiteSpace(group))
+                    {
+                        var coordinate = $"{group}:{artifact}";
+                        result.TryAdd(coordinate, new DirectDependency(coordinate, pom));
+                    }
+                }
+            }
+            catch
+            {
+                // Ignore malformed POMs; findings remain usable.
+            }
         }
+
+        return result;
+    }
+
+    private static bool ContainsExcludedDirectory(string projectPath, string path)
+    {
+        var relative = Path.GetRelativePath(projectPath, path);
+        var segments = relative.Split([Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar], StringSplitOptions.RemoveEmptyEntries);
+        return segments.Any(segment => segment is "node_modules" or ".git" or "bin" or "obj" or "target" or "build" or ".gradle");
     }
 
     private static void ApplyProjectFileToOccurrences(string projectPath, Finding finding, string projectFilePath)

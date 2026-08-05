@@ -15,16 +15,26 @@ public sealed class UpdateCommandService
         }
 
         var projectFile = finding.Occurrences.Select(occurrence => occurrence.ProjectFilePath).FirstOrDefault(path => !string.IsNullOrWhiteSpace(path));
-        return project.PackageManager switch
+        if (!string.IsNullOrWhiteSpace(projectFile)
+            && new[] { ".csproj", ".fsproj", ".vbproj" }.Contains(Path.GetExtension(projectFile), StringComparer.OrdinalIgnoreCase))
         {
-            PackageManagerType.DotNetCli when !string.IsNullOrWhiteSpace(projectFile) && projectFile.EndsWith(".csproj", StringComparison.OrdinalIgnoreCase) =>
-                $"dotnet add \"{projectFile}\" package {finding.PackageName} --version {finding.RecommendedFixedVersion}",
-            PackageManagerType.Npm =>
-                $"npm install {finding.PackageName}@{finding.RecommendedFixedVersion}",
-            PackageManagerType.Pnpm =>
-                $"pnpm add {finding.PackageName}@{finding.RecommendedFixedVersion}",
-            PackageManagerType.Yarn =>
-                $"yarn add {finding.PackageName}@{finding.RecommendedFixedVersion}",
+            return $"dotnet add \"{projectFile}\" package {finding.PackageName} --version {finding.RecommendedFixedVersion}";
+        }
+
+        var manager = project.PackageManager;
+        if (!string.IsNullOrWhiteSpace(projectFile) && Path.GetFileName(projectFile).Equals("package.json", StringComparison.OrdinalIgnoreCase))
+        {
+            var directory = Path.GetDirectoryName(projectFile)!;
+            manager = File.Exists(Path.Combine(directory, "pnpm-lock.yaml")) ? PackageManagerType.Pnpm
+                : File.Exists(Path.Combine(directory, "yarn.lock")) ? PackageManagerType.Yarn
+                : PackageManagerType.Npm;
+        }
+
+        return manager switch
+        {
+            PackageManagerType.Npm => $"npm install {finding.PackageName}@{finding.RecommendedFixedVersion}",
+            PackageManagerType.Pnpm => $"pnpm add {finding.PackageName}@{finding.RecommendedFixedVersion}",
+            PackageManagerType.Yarn => $"yarn add {finding.PackageName}@{finding.RecommendedFixedVersion}",
             _ => null
         };
     }

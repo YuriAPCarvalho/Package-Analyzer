@@ -2,7 +2,7 @@
 
 ## Local-first
 
-The application does not provide login functionality, collect telemetry or analytics, or automatically upload project content. Network access is limited to user-initiated or application-supporting operations: checking for Package-Analyzer updates, downloading the managed Trivy executable, allowing Trivy to update its public vulnerability databases, opening external references, and optionally enriching public vulnerability identifiers through NVD, OSV, or GitHub Advisory. External enrichment is disabled by default.
+The application does not provide login functionality, collect telemetry or analytics, or automatically upload project content. Network access is limited to user-initiated or application-supporting operations: checking for Package-Analyzer updates, downloading the managed Trivy executable, allowing Trivy to update its public vulnerability databases, restoring dependencies and wrapper distributions for a trusted full scan, opening external references, and optionally enriching public vulnerability identifiers through NVD, OSV, or GitHub Advisory. External enrichment is disabled by default.
 
 ## Layered architecture
 
@@ -13,7 +13,9 @@ The application does not provide login functionality, collect telemetry or analy
 
 ## Process execution
 
-Commands are stored with the executable and arguments separated. Execution uses `ProcessStartInfo.ArgumentList`, `UseShellExecute=false`, asynchronous standard output and error streams, timeouts, and cancellation.
+Commands are stored with the executable and arguments separated. Native executable invocation uses `ProcessStartInfo.ArgumentList`; all processes use `UseShellExecute=false`, asynchronous standard output and error streams, timeouts, and cancellation.
+
+Full-scan preparation is target based. Automatic mode redetects .NET, Node.js, Maven, and Gradle roots before each run and regenerates commands with explicit manifests and working directories. Windows batch shims and project wrappers use a dedicated `cmd.exe` adapter with quoted generated arguments. A failed target does not prevent Trivy from producing a report; the scan is stored as completed with warnings.
 
 ## Deduplication
 

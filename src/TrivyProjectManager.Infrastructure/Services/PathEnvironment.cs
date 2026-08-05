@@ -2,7 +2,7 @@ namespace TrivyProjectManager.Infrastructure.Services;
 
 internal static class PathEnvironment
 {
-    public static string? FindExecutable(string fileName)
+    public static string? FindExecutable(string fileName, string? workingDirectory = null)
     {
         if (string.IsNullOrWhiteSpace(fileName))
         {
@@ -23,6 +23,18 @@ internal static class PathEnvironment
         {
             candidates.AddRange(pathExt.Select(ext => fileName + ext.ToLowerInvariant()));
             candidates.AddRange(pathExt.Select(ext => fileName + ext.ToUpperInvariant()));
+        }
+
+        if (!string.IsNullOrWhiteSpace(workingDirectory))
+        {
+            foreach (var candidate in candidates)
+            {
+                var localPath = Path.GetFullPath(Path.Combine(workingDirectory, candidate));
+                if (File.Exists(localPath))
+                {
+                    return localPath;
+                }
+            }
         }
 
         foreach (var directory in (Environment.GetEnvironmentVariable("PATH") ?? string.Empty).Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries))

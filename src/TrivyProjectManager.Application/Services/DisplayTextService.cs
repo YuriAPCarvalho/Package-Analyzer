@@ -34,6 +34,7 @@ public static class DisplayTextService
         Domain.Enums.ScanStatus.Failed => "Falhou",
         Domain.Enums.ScanStatus.Cancelled => "Cancelado",
         Domain.Enums.ScanStatus.TimedOut => "Tempo esgotado",
+        Domain.Enums.ScanStatus.SucceededWithWarnings => "Concluído com avisos",
         _ => status.ToString()
     };
 

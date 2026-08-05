@@ -22,10 +22,14 @@ The application may access the internet to:
 - Check for and download official Package-Analyzer updates.
 - Obtain or update the locally managed Trivy installation.
 - Allow Trivy to update its public vulnerability databases.
+- Restore dependencies from package registries configured by a trusted project during a full scan.
+- Download Maven or Gradle distributions referenced by project-owned wrappers when those wrappers are executed.
 - Query NVD, OSV, or GitHub Advisory for optional vulnerability enrichment when the user enables it.
 - Open external references when explicitly requested by the user.
 
 External enrichment through NVD, OSV, or GitHub Advisory is optional and disabled by default. When the user enables this feature, Package-Analyzer queries only public vulnerability identifiers such as CVE or GHSA. Source code, local paths, complete reports, and project names are not transmitted during these requests.
+
+Full-scan preparation runs only after the user trusts a project. Package managers and build wrappers control which registries, mirrors, credentials, and download endpoints they contact; Package-Analyzer does not upload scan reports through this preparation flow.
 
 If the user provides a GitHub Advisory token, it is stored locally in `%LOCALAPPDATA%\TrivyProjectManager\settings.json` and must never be committed to the repository.
 

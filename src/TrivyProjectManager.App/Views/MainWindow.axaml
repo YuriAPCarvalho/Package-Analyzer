@@ -352,16 +352,24 @@
               <ComboBox ItemsSource="{Binding TechnologyOptions}" SelectedItem="{Binding SelectedProject.Project.Technology}" />
               <ComboBox ItemsSource="{Binding PackageManagerOptions}" SelectedItem="{Binding SelectedProject.Project.PackageManager}" />
               <CheckBox Content="Armazenar dentro do projeto (.security/trivy)" IsChecked="{Binding UseInsideProjectStorage}" />
-              <ItemsControl ItemsSource="{Binding Commands}">
+              <CheckBox Content="Detectar e preparar tecnologias automaticamente no scan completo" IsChecked="{Binding AutoDetectPreparation}" />
+              <TextBlock Text="No modo automático, a lista abaixo é regenerada antes de cada scan completo. Desative-o antes de personalizar comandos." Opacity="0.74" TextWrapping="Wrap" />
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBlock Text="{Binding PreparationTrustText}" VerticalAlignment="Center" TextWrapping="Wrap" />
+                <Button Content="Revogar confiança" Command="{Binding RevokePreparationTrustCommand}" />
+              </StackPanel>
+              <ItemsControl ItemsSource="{Binding Commands}" IsEnabled="{Binding CommandsAreEditable}">
                 <ItemsControl.ItemTemplate>
                   <DataTemplate>
-                    <Grid ColumnDefinitions="Auto,1.2*,1.4*,2*,Auto,Auto" ColumnSpacing="8" Margin="0,0,0,8">
+                    <Grid ColumnDefinitions="Auto,1.2*,1.2*,1.6*,1.6*,Auto,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="8" Margin="0,0,0,8">
                       <CheckBox IsChecked="{Binding IsEnabled}" VerticalAlignment="Center" />
                       <TextBox Grid.Column="1" Text="{Binding Name}" />
                       <TextBox Grid.Column="2" Text="{Binding Command}" />
                       <TextBox Grid.Column="3" Text="{Binding Arguments}" />
-                      <NumericUpDown Grid.Column="4" Value="{Binding ExecutionOrder}" Minimum="1" Maximum="99" Width="80" />
-                      <CheckBox Grid.Column="5" Content="Continuar" IsChecked="{Binding ContinueOnError}" />
+                      <TextBox Grid.Column="4" Text="{Binding WorkingDirectory}" />
+                      <NumericUpDown Grid.Column="5" Value="{Binding ExecutionOrder}" Minimum="1" Maximum="99" Width="80" />
+                      <CheckBox Grid.Column="6" Content="Continuar" IsChecked="{Binding ContinueOnError}" />
+                      <TextBlock Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="6" Text="{Binding PreparationTargetKey}" Opacity="0.62" TextTrimming="CharacterEllipsis" />
                     </Grid>
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>

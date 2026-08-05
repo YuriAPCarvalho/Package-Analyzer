@@ -21,6 +21,9 @@ public sealed class ScanOrchestrator(
     IAppSettingsService appSettingsService,
     IStoragePathService storagePathService,
     IRetentionService retentionService,
+    IProjectDetectionService projectDetectionService,
+    ICommandProfileService commandProfileService,
+    SecurityExceptionApplicator securityExceptionApplicator,
     ILogger<ScanOrchestrator> logger) : IScanOrchestrator
 {
     private static readonly SemaphoreSlim Gate = new(1, 1);
@@ -76,7 +79,25 @@ public sealed class ScanOrchestrator(
             throw new DirectoryNotFoundException($"Project folder no longer exists: {project.Path}");
         }
 
+        if (mode == ScanMode.Full && !project.IsPreparationTrusted)
+        {
+            throw new InvalidOperationException("O projeto ainda não foi marcado como confiável para executar comandos de preparação.");
+        }
+
         var settings = await appSettingsService.LoadAsync(cancellationToken);
+        ProjectDetectionResult? detection = null;
+        if (mode == ScanMode.Full && project.AutoDetectPreparation)
+        {
+            detection = await projectDetectionService.DetectAsync(project.Path, cancellationToken);
+            project.Technology = detection.SuggestedTechnology;
+            project.PackageManager = detection.SuggestedPackageManager;
+            dbContext.ProjectCommands.RemoveRange(project.Commands);
+            project.Commands.Clear();
+            project.Commands.AddRange(commandProfileService.CreateAutomaticCommands(detection));
+            project.UpdatedAt = DateTimeOffset.UtcNow;
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+
         var scan = new Scan
         {
             ProjectId = project.Id,
@@ -96,16 +117,46 @@ public sealed class ScanOrchestrator(
             : [];
         var totalSteps = enabledCommands.Count + 2;
         var step = 1;
+        var preparationWarnings = new List<string>();
+        var unavailableTargets = FindUnavailableTargets(detection);
 
         try
         {
+            foreach (var warning in detection?.Warnings ?? [])
+            {
+                preparationWarnings.Add(warning);
+                logs.Report(new ProcessLogLine(DateTimeOffset.UtcNow, "warning", warning));
+            }
+
+            foreach (var unavailable in unavailableTargets.Values)
+            {
+                preparationWarnings.Add(unavailable);
+                logs.Report(new ProcessLogLine(DateTimeOffset.UtcNow, "warning", unavailable));
+            }
+
+            var failedTargets = unavailableTargets.Keys.ToHashSet(StringComparer.OrdinalIgnoreCase);
             foreach (var command in enabledCommands)
             {
+                var targetKey = CommandTargetKey(command, project.Path);
+                if (failedTargets.Contains(targetKey))
+                {
+                    var skipped = $"Comando '{command.Name}' ignorado porque a preparação anterior do alvo falhou ou a ferramenta necessária não está disponível.";
+                    preparationWarnings.Add(skipped);
+                    logs.Report(new ProcessLogLine(DateTimeOffset.UtcNow, "warning", skipped));
+                    progress?.Report(new ScanProgress(command.Name, CommandExecutionStatus.Skipped, step++, totalSteps, skipped));
+                    continue;
+                }
+
                 progress?.Report(new ScanProgress(command.Name, CommandExecutionStatus.Running, step, totalSteps, $"{step} de {totalSteps} - {command.Name}"));
                 var errors = CommandValidationService.Validate(command);
                 if (errors.Count > 0)
                 {
-                    throw new InvalidOperationException(string.Join(Environment.NewLine, errors));
+                    var validationError = $"Comando '{command.Name}' inválido: {string.Join(" ", errors)}";
+                    preparationWarnings.Add(validationError);
+                    failedTargets.Add(targetKey);
+                    logs.Report(new ProcessLogLine(DateTimeOffset.UtcNow, "warning", validationError));
+                    progress?.Report(new ScanProgress(command.Name, CommandExecutionStatus.Failed, step++, totalSteps, validationError));
+                    continue;
                 }
 
                 var request = new ProcessRequest(
@@ -113,11 +164,49 @@ public sealed class ScanOrchestrator(
                     ArgumentSplitter.Split(command.Arguments),
                     string.IsNullOrWhiteSpace(command.WorkingDirectory) ? project.Path : command.WorkingDirectory!,
                     TimeSpan.FromSeconds(settings.DefaultTimeoutSeconds));
-                var result = await processRunner.RunAsync(request, logs, cancellationToken);
-                await AppendLogAsync(scan.LogPath, capturedLogs, cancellationToken);
-                if (!result.Succeeded && !command.ContinueOnError)
+                ProcessResult result;
+                try
                 {
-                    throw new InvalidOperationException($"Command '{command.Name}' failed with exit code {result.ExitCode}.");
+                    result = await processRunner.RunAsync(request, logs, cancellationToken);
+                }
+                catch (FileNotFoundException ex)
+                {
+                    var missing = $"Ferramenta ausente para '{command.Name}': {ex.FileName ?? command.Command}. Instale-a e garanta que esteja disponível no PATH.";
+                    preparationWarnings.Add(missing);
+                    failedTargets.Add(targetKey);
+                    logs.Report(new ProcessLogLine(DateTimeOffset.UtcNow, "warning", missing));
+                    progress?.Report(new ScanProgress(command.Name, CommandExecutionStatus.Failed, step++, totalSteps, missing));
+                    continue;
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    var executionError = $"Não foi possível executar '{command.Name}': {ex.Message}. O Trivy ainda será executado.";
+                    preparationWarnings.Add(executionError);
+                    failedTargets.Add(targetKey);
+                    logs.Report(new ProcessLogLine(DateTimeOffset.UtcNow, "warning", executionError));
+                    progress?.Report(new ScanProgress(command.Name, CommandExecutionStatus.Failed, step++, totalSteps, executionError));
+                    continue;
+                }
+
+                await AppendLogAsync(scan.LogPath, capturedLogs, cancellationToken);
+                if (result.Status == CommandExecutionStatus.Cancelled && cancellationToken.IsCancellationRequested)
+                {
+                    throw new OperationCanceledException(cancellationToken);
+                }
+
+                if (!result.Succeeded)
+                {
+                    var failed = $"Comando '{command.Name}' falhou com código {result.ExitCode}; o Trivy ainda será executado.";
+                    preparationWarnings.Add(failed);
+                    if (!command.ContinueOnError)
+                    {
+                        failedTargets.Add(targetKey);
+                    }
+                    logs.Report(new ProcessLogLine(DateTimeOffset.UtcNow, "warning", failed));
                 }
 
                 progress?.Report(new ScanProgress(command.Name, result.Status, step++, totalSteps, command.Name));
@@ -149,7 +238,8 @@ public sealed class ScanOrchestrator(
             var previousScans = await dbContext.Scans
                 .AsNoTracking()
                 .Include(s => s.Findings)
-                .Where(s => s.ProjectId == project.Id && s.Id != scan.Id && s.Status == ScanStatus.Succeeded)
+                .Where(s => s.ProjectId == project.Id && s.Id != scan.Id
+                    && (s.Status == ScanStatus.Succeeded || s.Status == ScanStatus.SucceededWithWarnings))
                 .ToListAsync(cancellationToken);
             var previousScan = previousScans.OrderByDescending(s => s.StartedAt).FirstOrDefault();
             var olderFindings = await dbContext.Findings
@@ -157,7 +247,7 @@ public sealed class ScanOrchestrator(
                 .Where(f => f.Scan!.ProjectId == project.Id && f.ScanId != scan.Id)
                 .ToListAsync(cancellationToken);
             comparisonService.Classify(findings, previousScan?.Findings ?? [], olderFindings);
-            await ApplySecurityExceptionsAsync(project.Id, findings, cancellationToken);
+            await securityExceptionApplicator.ApplyAsync(project.Id, findings, cancellationToken);
 
             var counters = FindingCounterService.Calculate(findings);
             scan.CriticalCount = counters.Critical;
@@ -174,7 +264,8 @@ public sealed class ScanOrchestrator(
             scan.RegressionCount = findings.Count(f => f.Status == FindingLifecycleStatus.Regression);
             scan.ResolvedCount = previousScan?.Findings.Count(previous => findings.All(current => current.FindingKey != previous.FindingKey)) ?? 0;
             PrepareFindingsForInsert(scan.Id, findings);
-            scan.Status = ScanStatus.Succeeded;
+            scan.Status = preparationWarnings.Count == 0 ? ScanStatus.Succeeded : ScanStatus.SucceededWithWarnings;
+            scan.ErrorMessage = preparationWarnings.Count == 0 ? null : string.Join(Environment.NewLine, preparationWarnings.Distinct());
             scan.FinishedAt = DateTimeOffset.UtcNow;
             project.LastScanAt = scan.FinishedAt;
             project.UpdatedAt = DateTimeOffset.UtcNow;
@@ -184,7 +275,8 @@ public sealed class ScanOrchestrator(
             await dbContext.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
             await retentionService.ApplyAsync(project.Id, settings.MaxHistoryPerProject, cancellationToken);
-            progress?.Report(new ScanProgress("Persistência", CommandExecutionStatus.Succeeded, totalSteps, totalSteps, "Scan concluído"));
+            var completionMessage = scan.Status == ScanStatus.SucceededWithWarnings ? "Scan concluído com avisos" : "Scan concluído";
+            progress?.Report(new ScanProgress("Persistência", CommandExecutionStatus.Succeeded, totalSteps, totalSteps, completionMessage));
             return new ScanExecutionResult(scan, capturedLogs);
         }
         catch (OperationCanceledException)
@@ -262,39 +354,38 @@ public sealed class ScanOrchestrator(
         }
     }
 
-    private async Task ApplySecurityExceptionsAsync(Guid projectId, IEnumerable<Finding> findings, CancellationToken cancellationToken)
+    private static Dictionary<string, string> FindUnavailableTargets(ProjectDetectionResult? detection)
     {
-        var now = DateTimeOffset.UtcNow;
-        var exceptions = await dbContext.SecurityExceptions
-            .AsNoTracking()
-            .Where(exception => exception.ProjectId == projectId
-                && exception.IsActive
-                && (exception.ExpiresAt == null || exception.ExpiresAt > now))
-            .ToListAsync(cancellationToken);
-
-        foreach (var finding in findings)
+        var unavailable = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        if (detection is null)
         {
-            if (exceptions.Any(exception => MatchesException(exception, finding)))
+            return unavailable;
+        }
+
+        foreach (var target in detection.Targets)
+        {
+            var missing = target.RequiredExecutables
+                .Where(executable => PathEnvironment.FindExecutable(executable, target.RootPath) is null)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            if (missing.Count > 0)
             {
-                finding.Status = FindingLifecycleStatus.Ignored;
+                unavailable[target.Key] = $"Alvo '{Path.GetRelativePath(detection.ProjectPath, target.ManifestPath)}' ignorado: ferramenta(s) ausente(s): {string.Join(", ", missing)}. Instale-as e disponibilize-as no PATH.";
             }
         }
+
+        return unavailable;
     }
 
-    private static bool MatchesException(Domain.Entities.SecurityException exception, Finding finding)
+    private static string CommandTargetKey(ProjectCommand command, string projectPath)
     {
-        if (!string.IsNullOrWhiteSpace(exception.FindingKey)
-            && exception.FindingKey.Equals(finding.FindingKey, StringComparison.OrdinalIgnoreCase))
+        if (!string.IsNullOrWhiteSpace(command.PreparationTargetKey))
         {
-            return true;
+            return command.PreparationTargetKey;
         }
 
-        return (string.IsNullOrWhiteSpace(exception.VulnerabilityId)
-                || exception.VulnerabilityId.Equals(finding.VulnerabilityId, StringComparison.OrdinalIgnoreCase))
-            && (string.IsNullOrWhiteSpace(exception.PackageName)
-                || exception.PackageName.Equals(finding.PackageName, StringComparison.OrdinalIgnoreCase))
-            && (string.IsNullOrWhiteSpace(exception.InstalledVersion)
-                || exception.InstalledVersion.Equals(finding.InstalledVersion, StringComparison.OrdinalIgnoreCase));
+        var directory = string.IsNullOrWhiteSpace(command.WorkingDirectory) ? projectPath : command.WorkingDirectory;
+        return $"manual:{Path.GetFullPath(directory!)}";
     }
 
     private void DetachPendingFindingGraph()

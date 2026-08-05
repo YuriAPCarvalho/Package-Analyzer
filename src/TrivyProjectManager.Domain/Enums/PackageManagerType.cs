@@ -6,5 +6,8 @@ public enum PackageManagerType
     DotNetCli = 1,
     Npm = 2,
     Pnpm = 3,
-    Yarn = 4
+    Yarn = 4,
+    Maven = 5,
+    Gradle = 6,
+    Multiple = 7
 }

@@ -15,7 +15,7 @@ public sealed class ProcessRunner : IProcessRunner
             throw new DirectoryNotFoundException($"Working directory was not found: {request.WorkingDirectory}");
         }
 
-        var executable = PathEnvironment.FindExecutable(request.FileName)
+        var executable = PathEnvironment.FindExecutable(request.FileName, request.WorkingDirectory)
             ?? throw new FileNotFoundException($"Executable was not found: {request.FileName}", request.FileName);
 
         var stdout = new StringBuilder();
@@ -25,24 +25,12 @@ public sealed class ProcessRunner : IProcessRunner
         using var timeoutCts = request.Timeout.HasValue ? new CancellationTokenSource(request.Timeout.Value) : null;
         using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts?.Token ?? CancellationToken.None);
 
+        var startInfo = BuildStartInfo(executable, request);
         using var process = new Process
         {
-            StartInfo = new ProcessStartInfo
-            {
-                FileName = executable,
-                WorkingDirectory = request.WorkingDirectory,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            },
+            StartInfo = startInfo,
             EnableRaisingEvents = true
         };
-
-        foreach (var argument in request.Arguments)
-        {
-            process.StartInfo.ArgumentList.Add(argument);
-        }
 
         process.OutputDataReceived += (_, args) => Append(stdout, "stdout", args.Data, progress);
         process.ErrorDataReceived += (_, args) => Append(stderr, "stderr", args.Data, progress);
@@ -67,6 +55,47 @@ public sealed class ProcessRunner : IProcessRunner
             KillProcess(process);
             return new ProcessResult(request.FileName, request.Arguments, startedAt, DateTimeOffset.UtcNow, -1, CommandExecutionStatus.Cancelled, stdout.ToString(), stderr.ToString());
         }
+    }
+
+    private static ProcessStartInfo BuildStartInfo(string executable, ProcessRequest request)
+    {
+        var isBatch = OperatingSystem.IsWindows()
+            && Path.GetExtension(executable) is { } extension
+            && (extension.Equals(".cmd", StringComparison.OrdinalIgnoreCase) || extension.Equals(".bat", StringComparison.OrdinalIgnoreCase));
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = isBatch ? Environment.GetEnvironmentVariable("ComSpec") ?? "cmd.exe" : executable,
+            WorkingDirectory = request.WorkingDirectory,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
+
+        if (isBatch)
+        {
+            var tokens = new[] { executable }.Concat(request.Arguments).Select(QuoteBatchToken);
+            startInfo.Arguments = $"/d /v:off /s /c \"call {string.Join(' ', tokens)}\"";
+        }
+        else
+        {
+            foreach (var argument in request.Arguments)
+            {
+                startInfo.ArgumentList.Add(argument);
+            }
+        }
+
+        return startInfo;
+    }
+
+    private static string QuoteBatchToken(string value)
+    {
+        if (value.Contains('\r') || value.Contains('\n') || value.Contains('\0'))
+        {
+            throw new InvalidOperationException("Batch command arguments cannot contain control characters.");
+        }
+
+        return $"\"{value.Replace("%", "%%", StringComparison.Ordinal).Replace("\"", "\"\"", StringComparison.Ordinal)}\"";
     }
 
     private static void Append(StringBuilder builder, string stream, string? message, IProgress<ProcessLogLine>? progress)

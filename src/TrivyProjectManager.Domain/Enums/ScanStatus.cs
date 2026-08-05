@@ -7,5 +7,6 @@ public enum ScanStatus
     Succeeded = 2,
     Failed = 3,
     Cancelled = 4,
-    TimedOut = 5
+    TimedOut = 5,
+    SucceededWithWarnings = 6
 }
