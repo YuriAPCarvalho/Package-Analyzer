@@ -4,8 +4,6 @@ public sealed class AppSettings
 {
     public string ApplicationName { get; set; } = "Package Analyzer";
     public string? TrivyPath { get; set; }
-    public bool AutoInstallTrivy { get; set; } = true;
-    public bool AutoUpdateTrivyOnStartup { get; set; } = true;
     public int DefaultTimeoutSeconds { get; set; } = 1800;
     public string? StorageDirectory { get; set; }
     public string Scanners { get; set; } = "vuln,misconfig,secret";

@@ -15,6 +15,7 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddSingleton<IStoragePathService, StoragePathService>();
         services.AddSingleton<IAppSettingsService, AppSettingsService>();
         services.AddSingleton<IProcessRunner, ProcessRunner>();
+        services.AddSingleton<ITrivyReleaseClient, GitHubTrivyReleaseClient>();
         services.AddSingleton<ITrivyBootstrapService, TrivyBootstrapService>();
         services.AddSingleton<IProjectDetectionService, ProjectDetectionService>();
         services.AddSingleton<ICommandProfileService, CommandProfileService>();

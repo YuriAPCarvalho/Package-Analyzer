@@ -381,8 +381,7 @@
 
               <TextBlock Text="Aplicação" FontSize="18" FontWeight="SemiBold" Margin="0,12,0,0" />
               <TextBox PlaceholderText="Caminho do Trivy" Text="{Binding Settings.TrivyPath}" />
-              <CheckBox Content="Instalar o Trivy automaticamente quando necessário" IsChecked="{Binding Settings.AutoInstallTrivy}" />
-              <CheckBox Content="Verificar atualização do Trivy ao abrir" IsChecked="{Binding Settings.AutoUpdateTrivyOnStartup}" />
+              <TextBlock Text="O Trivy é verificado e atualizado automaticamente em toda abertura. Instalações externas não são sobrescritas." Opacity="0.74" TextWrapping="Wrap" />
               <NumericUpDown Value="{Binding Settings.DefaultTimeoutSeconds}" Minimum="30" Maximum="7200" />
               <TextBox PlaceholderText="Diretório de armazenamento" Text="{Binding Settings.StorageDirectory}" />
               <TextBox PlaceholderText="Scanners padrão" Text="{Binding Settings.Scanners}" />

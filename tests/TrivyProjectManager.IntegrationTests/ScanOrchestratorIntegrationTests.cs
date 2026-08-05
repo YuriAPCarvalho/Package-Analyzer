@@ -60,10 +60,63 @@ public sealed class ScanOrchestratorIntegrationTests
         Assert.Equal(root, commands[0].WorkingDirectory);
     }
 
+    [Fact]
+    public async Task FailedNpmInstallSkipsDependentBuildAndStillRunsTrivy()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "tpm-integration", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        var packageJson = Path.Combine(root, "package.json");
+        await File.WriteAllTextAsync(packageJson, "{\"scripts\":{\"build\":\"vite build\"}}");
+        var options = new DbContextOptionsBuilder<TrivyProjectManagerDbContext>()
+            .UseSqlite($"Data Source={Path.Combine(root, "data.db")}")
+            .ConfigureWarnings(warnings => warnings.Ignore(RelationalEventId.PendingModelChangesWarning))
+            .Options;
+        await using var dbContext = new TrivyProjectManagerDbContext(options);
+        await dbContext.Database.EnsureCreatedAsync();
+        var project = new Project { Name = "NodeApp", Path = root, Technology = ProjectTechnology.Node, PackageManager = PackageManagerType.Npm, AutoDetectPreparation = true, IsPreparationTrusted = true };
+        dbContext.Projects.Add(project);
+        await dbContext.SaveChangesAsync();
+        var detection = new ProjectDetectionResult(root, [ProjectTechnology.Node], [PackageManagerType.Npm], ProjectTechnology.Node, PackageManagerType.Npm,
+            [new DetectedProjectTarget("node:package.json", ProjectTechnology.Node, PackageManagerType.Npm, root, packageJson, ["npm"], [root])], []);
+        var trivy = new FakeTrivyService();
+        var processRunner = new FailingProcessRunner();
+        var orchestrator = new ScanOrchestrator(
+            dbContext,
+            processRunner,
+            trivy,
+            new EmptyReportParser(),
+            new TrivyReportRedactionService(new SecretMaskingService()),
+            new ScanComparisonService(),
+            new NoOpDependencyAnalysisService(),
+            new NoOpEnrichmentService(),
+            new TestSettingsService(),
+            new TestStoragePathService(root),
+            new NoOpRetentionService(),
+            new FixedDetectionService(detection),
+            new CommandProfileService(),
+            new SecurityExceptionApplicator(dbContext),
+            NullLogger<ScanOrchestrator>.Instance);
+
+        var result = await orchestrator.RunAsync(project.Id, ScanMode.Full);
+
+        Assert.True(trivy.WasCalled);
+        Assert.Equal(ScanStatus.SucceededWithWarnings, result.Scan.Status);
+        Assert.Equal(1, processRunner.CallCount);
+        var commands = await dbContext.ProjectCommands.OrderBy(command => command.ExecutionOrder).ToListAsync();
+        Assert.Collection(
+            commands,
+            install => Assert.Equal("install", install.Arguments),
+            build => Assert.Equal("run build", build.Arguments));
+        Assert.Contains(result.Logs, line => line.Message.Contains("ignorado", StringComparison.OrdinalIgnoreCase));
+    }
+
     private sealed class FailingProcessRunner : IProcessRunner
     {
+        public int CallCount { get; private set; }
+
         public Task<ProcessResult> RunAsync(ProcessRequest request, IProgress<ProcessLogLine>? progress = null, CancellationToken cancellationToken = default)
         {
+            CallCount++;
             var now = DateTimeOffset.UtcNow;
             return Task.FromResult(new ProcessResult(request.FileName, request.Arguments, now, now, 1, CommandExecutionStatus.Failed, string.Empty, "failed"));
         }

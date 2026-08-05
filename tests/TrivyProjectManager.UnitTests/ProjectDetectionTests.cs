@@ -32,6 +32,29 @@ public sealed class ProjectDetectionTests
     }
 
     [Fact]
+    public async Task NpmProjectWithoutLockFileUsesInstallBeforeBuild()
+    {
+        using var directory = TempDirectory.Create();
+        File.WriteAllText(Path.Combine(directory.Path, "package.json"), "{\"scripts\":{\"build\":\"vite build\"}}");
+
+        var detection = await new ProjectDetectionService().DetectAsync(directory.Path);
+        var commands = new CommandProfileService().CreateAutomaticCommands(detection);
+
+        Assert.Collection(
+            commands,
+            install =>
+            {
+                Assert.Equal("npm", install.Command);
+                Assert.Equal("install", install.Arguments);
+            },
+            build =>
+            {
+                Assert.Equal("npm", build.Command);
+                Assert.Equal("run build", build.Arguments);
+            });
+    }
+
+    [Fact]
     public async Task DetectsPnpmProject()
     {
         using var directory = TempDirectory.Create();

@@ -192,7 +192,37 @@ public sealed partial class MainWindowViewModel : ObservableObject
         }
     }
 
-    public bool CanRunScan => HasSelectedProject && !IsScanRunning;
+    private bool _isTrivyPreparing;
+    public bool IsTrivyPreparing
+    {
+        get => _isTrivyPreparing;
+        private set
+        {
+            if (SetProperty(ref _isTrivyPreparing, value))
+            {
+                OnPropertyChanged(nameof(CanRunScan));
+                RunQuickScanCommand.NotifyCanExecuteChanged();
+                RunFullScanCommand.NotifyCanExecuteChanged();
+            }
+        }
+    }
+
+    private bool _isTrivyAvailable;
+    public bool IsTrivyAvailable
+    {
+        get => _isTrivyAvailable;
+        private set
+        {
+            if (SetProperty(ref _isTrivyAvailable, value))
+            {
+                OnPropertyChanged(nameof(CanRunScan));
+                RunQuickScanCommand.NotifyCanExecuteChanged();
+                RunFullScanCommand.NotifyCanExecuteChanged();
+            }
+        }
+    }
+
+    public bool CanRunScan => HasSelectedProject && !IsScanRunning && !IsTrivyPreparing && IsTrivyAvailable;
 
     private bool _isApplicationUpdateRunning;
     public bool IsApplicationUpdateRunning
@@ -395,17 +425,15 @@ public sealed partial class MainWindowViewModel : ObservableObject
 
     private async Task EnsureTrivyAvailableAsync()
     {
-        if (!Settings.AutoInstallTrivy)
-        {
-            return;
-        }
-
+        IsTrivyPreparing = true;
+        IsTrivyAvailable = false;
         try
         {
             ProgressText = "Verificando Trivy...";
             var progress = new Progress<string>(message => Dispatcher.UIThread.Post(() => ProgressText = message));
             var result = await _trivyBootstrapService.EnsureAvailableAsync(Settings, progress);
             Settings.TrivyPath = result.ExecutablePath ?? Settings.TrivyPath;
+            IsTrivyAvailable = result.ExecutablePath is not null && result.Version is not null;
             ProgressText = result.Version is null
                 ? result.Message
                 : $"{result.Message} {result.Version}";
@@ -416,6 +444,10 @@ public sealed partial class MainWindowViewModel : ObservableObject
             await _dialogService.ShowMessageAsync(
                 "Trivy automático",
                 $"Não foi possível baixar ou atualizar o Trivy automaticamente. Você ainda pode configurar o caminho do trivy.exe manualmente em Configurações.\n\n{ex.Message}");
+        }
+        finally
+        {
+            IsTrivyPreparing = false;
         }
     }
 
@@ -451,10 +483,10 @@ public sealed partial class MainWindowViewModel : ObservableObject
         }
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanRunScan))]
     private Task RunQuickScanAsync() => RunScanAsync(ScanMode.Quick);
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanRunScan))]
     private async Task RunFullScanAsync()
     {
         if (SelectedProject is null)
@@ -758,7 +790,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
 
     private async Task RunScanAsync(ScanMode mode)
     {
-        if (SelectedProject is null)
+        if (!CanRunScan || SelectedProject is null)
         {
             return;
         }

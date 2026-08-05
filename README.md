@@ -47,6 +47,7 @@ The application uses **Trivy** as one of its scanning engines. Trivy is an open-
 - Automatically mask secrets before displaying or storing them.
 - Store application data in a local SQLite database.
 - Check for and install application updates through Velopack.
+- Check for and securely update an application-managed Trivy installation on every startup.
 - Use an official installer for Windows x64.
 
 ---
@@ -202,13 +203,13 @@ samples/
 └── trivy-reports/
 ```
 
-The application automatically looks for `trivy.exe` in the system `PATH` or at the path configured by the user.
+The application checks the latest stable Trivy release on every startup. A valid executable found in the system `PATH` or at the configured path can be used as an offline fallback, but it is migrated to an application-managed copy when connectivity is available. External installations are never overwritten.
 
 Quick scans run Trivy without executing project commands. Full scans detect .NET, Node.js, and Java targets again before each run. The first full scan asks the user to trust the project because package installation and build commands can execute scripts supplied by that project. Trust can be revoked in project settings.
 
 Package-Analyzer does not install the .NET SDK, Node.js, or a JDK. Missing toolchains are reported per target; available targets and Trivy continue to run. Maven and Gradle wrappers committed to the project are preferred over global installations.
 
-When automatic installation is enabled, Trivy is downloaded to:
+The managed Trivy package is validated against the SHA-256 digest published with the GitHub release and installed at:
 
 ```text
 %LOCALAPPDATA%\TrivyProjectManager\tools\trivy\trivy.exe

@@ -9,20 +9,14 @@ internal static class PathEnvironment
             return null;
         }
 
-        if (Path.IsPathRooted(fileName))
-        {
-            return File.Exists(fileName) ? fileName : null;
-        }
-
         var pathExt = OperatingSystem.IsWindows()
             ? (Environment.GetEnvironmentVariable("PATHEXT") ?? ".EXE;.CMD;.BAT").Split(';', StringSplitOptions.RemoveEmptyEntries)
             : [string.Empty];
+        var candidates = BuildCandidates(fileName, pathExt);
 
-        var candidates = new List<string> { fileName };
-        if (OperatingSystem.IsWindows() && Path.GetExtension(fileName).Length == 0)
+        if (Path.IsPathRooted(fileName))
         {
-            candidates.AddRange(pathExt.Select(ext => fileName + ext.ToLowerInvariant()));
-            candidates.AddRange(pathExt.Select(ext => fileName + ext.ToUpperInvariant()));
+            return candidates.FirstOrDefault(File.Exists);
         }
 
         if (!string.IsNullOrWhiteSpace(workingDirectory))
@@ -50,5 +44,20 @@ internal static class PathEnvironment
         }
 
         return null;
+    }
+
+    private static IReadOnlyList<string> BuildCandidates(string fileName, IReadOnlyCollection<string> pathExt)
+    {
+        if (!OperatingSystem.IsWindows() || Path.GetExtension(fileName).Length > 0)
+        {
+            return [fileName];
+        }
+
+        return pathExt
+            .Select(extension => extension.StartsWith('.') ? extension : $".{extension}")
+            .Select(extension => fileName + extension.ToLowerInvariant())
+            .Append(fileName)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
     }
 }

@@ -10,6 +10,25 @@
 
 ### Security
 
+## [0.2.1] - 2026-08-05
+
+### Added
+
+- Automated startup checks for the latest stable Trivy release, with offline fallback to an existing usable installation.
+
+### Changed
+
+- Trivy is now checked on every startup and migrated to an application-managed installation without overwriting external copies.
+
+### Fixed
+
+- Process output is decoded and persisted as UTF-8, with terminal ANSI sequences removed before display.
+- Windows package-manager commands now prefer `.cmd` launchers such as `npm.cmd` over extensionless Unix scripts.
+
+### Security
+
+- Managed Trivy downloads are validated against the release asset SHA-256 digest before atomic installation.
+
 ## [0.2.0] - 2026-08-05
 
 ### Added

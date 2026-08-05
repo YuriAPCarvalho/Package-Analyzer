@@ -1,137 +1,134 @@
 using System.IO.Compression;
-using System.Net.Http.Headers;
-using System.Text.Json;
-using System.Text.Json.Serialization;
+using System.Security.Cryptography;
+using System.Text.RegularExpressions;
 using TrivyProjectManager.Application.Abstractions;
 using TrivyProjectManager.Application.DTOs;
 
 namespace TrivyProjectManager.Infrastructure.Services;
 
-public sealed class TrivyBootstrapService(ITrivyService trivyService, IAppSettingsService settingsService, IStoragePathService storagePathService) : ITrivyBootstrapService
+public sealed partial class TrivyBootstrapService(
+    ITrivyService trivyService,
+    ITrivyReleaseClient releaseClient,
+    IAppSettingsService settingsService,
+    IStoragePathService storagePathService) : ITrivyBootstrapService
 {
-    private const string LatestReleaseUrl = "https://api.github.com/repos/aquasecurity/trivy/releases/latest";
-    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
-
     public async Task<TrivyBootstrapResult> EnsureAvailableAsync(AppSettings settings, IProgress<string>? progress = null, CancellationToken cancellationToken = default)
     {
         var managedPath = storagePathService.GetManagedTrivyExecutablePath();
-        var configuredExists = !string.IsNullOrWhiteSpace(settings.TrivyPath) && File.Exists(settings.TrivyPath);
-        var pathExists = trivyService.LocateExecutable(settings.TrivyPath) is not null;
+        var (existingPath, existingVersionText, existingVersion) = await FindUsableExistingAsync(settings, managedPath, cancellationToken);
 
-        if (!settings.AutoInstallTrivy)
+        TrivyReleasePackage release;
+        try
         {
-            var version = await trivyService.GetVersionAsync(settings.TrivyPath, cancellationToken);
-            return new TrivyBootstrapResult(trivyService.LocateExecutable(settings.TrivyPath), version, false, "Instalação automática do Trivy desativada.");
+            progress?.Report("Verificando atualização do Trivy...");
+            release = await releaseClient.GetLatestWindowsX64Async(cancellationToken);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException && existingVersion is not null)
+        {
+            return new TrivyBootstrapResult(existingPath, existingVersionText, false, $"Não foi possível verificar atualização do Trivy; usando a versão instalada. {ex.Message}");
         }
 
-        if (settings.AutoUpdateTrivyOnStartup)
+        var existingIsManaged = PathsEqual(existingPath, managedPath);
+        if (existingVersion is not null && existingVersion > release.Version)
         {
+            return new TrivyBootstrapResult(existingPath, existingVersionText, false, "A versão instalada do Trivy é mais recente que o release estável; nenhum downgrade foi realizado.");
+        }
+
+        if (existingIsManaged && existingVersion == release.Version)
+        {
+            settings.TrivyPath = managedPath;
             try
             {
-                var release = await GetLatestReleaseAsync(cancellationToken);
-                if (ShouldInstallOrUpdate(settings, managedPath, release.TagName))
-                {
-                    progress?.Report($"Baixando Trivy {release.TagName}...");
-                    await InstallReleaseAsync(release, managedPath, cancellationToken);
-                    settings.TrivyPath = managedPath;
-                    await settingsService.SaveAsync(settings, cancellationToken);
-                    var version = await trivyService.GetVersionAsync(managedPath, cancellationToken);
-                    return new TrivyBootstrapResult(managedPath, version, true, $"Trivy {release.TagName} instalado/atualizado.");
-                }
+                await settingsService.SaveAsync(settings, cancellationToken);
+                return new TrivyBootstrapResult(managedPath, existingVersionText, false, "Trivy já está atualizado.");
             }
-            catch (Exception ex) when (pathExists || configuredExists)
+            catch (Exception ex) when (ex is not OperationCanceledException)
             {
-                var currentVersion = await trivyService.GetVersionAsync(settings.TrivyPath, cancellationToken);
-                return new TrivyBootstrapResult(trivyService.LocateExecutable(settings.TrivyPath), currentVersion, false, $"Não foi possível verificar atualização do Trivy: {ex.Message}");
+                return new TrivyBootstrapResult(managedPath, existingVersionText, false, $"Trivy já está atualizado, mas não foi possível salvar a configuração: {ex.Message}");
             }
         }
 
-        if (pathExists)
+        try
         {
-            var currentPath = trivyService.LocateExecutable(settings.TrivyPath);
-            var currentVersion = await trivyService.GetVersionAsync(settings.TrivyPath, cancellationToken);
-            return new TrivyBootstrapResult(currentPath, currentVersion, false, "Trivy disponível.");
+            progress?.Report($"Baixando Trivy {release.TagName}...");
+            await InstallReleaseAsync(release, managedPath, cancellationToken);
+            var installedVersionText = await GetUsableVersionAsync(managedPath, cancellationToken)
+                ?? throw new InvalidOperationException("O Trivy instalado não respondeu à verificação de versão.");
+            settings.TrivyPath = managedPath;
+            try
+            {
+                await settingsService.SaveAsync(settings, cancellationToken);
+                return new TrivyBootstrapResult(managedPath, installedVersionText, true, $"Trivy {release.TagName} instalado/atualizado.");
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                return new TrivyBootstrapResult(managedPath, installedVersionText, true, $"Trivy {release.TagName} instalado/atualizado, mas não foi possível salvar a configuração: {ex.Message}");
+            }
         }
-
-        var latest = await GetLatestReleaseAsync(cancellationToken);
-        progress?.Report($"Baixando Trivy {latest.TagName}...");
-        await InstallReleaseAsync(latest, managedPath, cancellationToken);
-        settings.TrivyPath = managedPath;
-        await settingsService.SaveAsync(settings, cancellationToken);
-        var installedVersion = await trivyService.GetVersionAsync(managedPath, cancellationToken);
-        return new TrivyBootstrapResult(managedPath, installedVersion, true, $"Trivy {latest.TagName} instalado.");
+        catch (Exception ex) when (ex is not OperationCanceledException && existingVersion is not null)
+        {
+            settings.TrivyPath = existingPath;
+            return new TrivyBootstrapResult(existingPath, existingVersionText, false, $"Não foi possível atualizar o Trivy; usando a versão instalada. {ex.Message}");
+        }
     }
 
-    private static bool ShouldInstallOrUpdate(AppSettings settings, string managedPath, string latestTag)
-    {
-        if (!string.IsNullOrWhiteSpace(settings.TrivyPath) && !string.Equals(settings.TrivyPath, managedPath, StringComparison.OrdinalIgnoreCase))
-        {
-            return false;
-        }
-
-        if (!File.Exists(managedPath))
-        {
-            return PathEnvironment.FindExecutable("trivy") is null && string.IsNullOrWhiteSpace(settings.TrivyPath)
-                || string.Equals(settings.TrivyPath, managedPath, StringComparison.OrdinalIgnoreCase);
-        }
-
-        var markerPath = GetVersionMarkerPath(managedPath);
-        var installedTag = File.Exists(markerPath) ? File.ReadAllText(markerPath).Trim() : string.Empty;
-        return !installedTag.Equals(latestTag, StringComparison.OrdinalIgnoreCase);
-    }
-
-    private static async Task<TrivyRelease> GetLatestReleaseAsync(CancellationToken cancellationToken)
-    {
-        using var httpClient = new HttpClient();
-        httpClient.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("Package-Analyzer", "1.0"));
-        using var response = await httpClient.GetAsync(LatestReleaseUrl, cancellationToken);
-        response.EnsureSuccessStatusCode();
-
-        await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-        var release = await JsonSerializer.DeserializeAsync<GitHubReleaseDto>(stream, JsonOptions, cancellationToken);
-        var asset = release?.Assets?
-            .FirstOrDefault(asset => asset.Name.EndsWith("Windows-64bit.zip", StringComparison.OrdinalIgnoreCase));
-
-        if (release is null || string.IsNullOrWhiteSpace(release.TagName) || asset is null || string.IsNullOrWhiteSpace(asset.BrowserDownloadUrl))
-        {
-            throw new InvalidOperationException("Não foi possível localizar o pacote Windows x64 do Trivy no GitHub.");
-        }
-
-        return new TrivyRelease(release.TagName, asset.BrowserDownloadUrl);
-    }
-
-    private static async Task InstallReleaseAsync(TrivyRelease release, string executablePath, CancellationToken cancellationToken)
+    private async Task InstallReleaseAsync(TrivyReleasePackage release, string executablePath, CancellationToken cancellationToken)
     {
         var targetDirectory = Path.GetDirectoryName(executablePath)
             ?? throw new InvalidOperationException("Caminho gerenciado do Trivy inválido.");
         Directory.CreateDirectory(targetDirectory);
 
-        var tempZipPath = Path.Combine(targetDirectory, $"trivy-{Guid.NewGuid():N}.zip");
-        var tempExtractDirectory = Path.Combine(targetDirectory, $"extract-{Guid.NewGuid():N}");
+        var operationId = Guid.NewGuid().ToString("N");
+        var tempZipPath = Path.Combine(targetDirectory, $"trivy-{operationId}.zip");
+        var tempExtractDirectory = Path.Combine(targetDirectory, $"extract-{operationId}");
+        var stagedExecutable = Path.Combine(targetDirectory, $"trivy-{operationId}.new.exe");
+        var backupExecutable = Path.Combine(targetDirectory, $"trivy-{operationId}.bak.exe");
+        var replacedExisting = false;
+
         try
         {
-            using (var httpClient = new HttpClient())
+            await releaseClient.DownloadAsync(release, tempZipPath, cancellationToken);
+            if (release.Size > 0 && new FileInfo(tempZipPath).Length != release.Size)
             {
-                httpClient.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("Package-Analyzer", "1.0"));
-                await using var download = await httpClient.GetStreamAsync(release.DownloadUrl, cancellationToken);
-                await using var file = File.Create(tempZipPath);
-                await download.CopyToAsync(file, cancellationToken);
+                throw new InvalidOperationException("O tamanho do pacote baixado do Trivy não corresponde ao asset publicado.");
             }
 
+            await ValidateSha256Async(tempZipPath, release.Sha256, cancellationToken);
             ZipFile.ExtractToDirectory(tempZipPath, tempExtractDirectory);
+
             var extractedExecutable = Directory.EnumerateFiles(tempExtractDirectory, "trivy.exe", SearchOption.AllDirectories).FirstOrDefault()
                 ?? throw new InvalidOperationException("O pacote baixado do Trivy não contém trivy.exe.");
+            var extractedVersionText = await GetUsableVersionAsync(extractedExecutable, cancellationToken);
+            if (ParseVersion(extractedVersionText) != release.Version)
+            {
+                throw new InvalidOperationException($"A versão do executável baixado não corresponde ao release {release.TagName}.");
+            }
 
-            File.Copy(extractedExecutable, executablePath, overwrite: true);
-            await File.WriteAllTextAsync(GetVersionMarkerPath(executablePath), release.TagName, cancellationToken);
+            File.Copy(extractedExecutable, stagedExecutable, overwrite: false);
+            if (File.Exists(executablePath))
+            {
+                File.Replace(stagedExecutable, executablePath, backupExecutable, ignoreMetadataErrors: true);
+                replacedExisting = true;
+            }
+            else
+            {
+                File.Move(stagedExecutable, executablePath);
+            }
+        }
+        catch
+        {
+            if (replacedExisting && File.Exists(backupExecutable))
+            {
+                File.Replace(backupExecutable, executablePath, destinationBackupFileName: null, ignoreMetadataErrors: true);
+            }
+
+            throw;
         }
         finally
         {
-            if (File.Exists(tempZipPath))
-            {
-                File.Delete(tempZipPath);
-            }
-
+            DeleteFileIfExists(tempZipPath);
+            DeleteFileIfExists(stagedExecutable);
+            DeleteFileIfExists(backupExecutable);
             if (Directory.Exists(tempExtractDirectory))
             {
                 Directory.Delete(tempExtractDirectory, recursive: true);
@@ -139,23 +136,89 @@ public sealed class TrivyBootstrapService(ITrivyService trivyService, IAppSettin
         }
     }
 
-    private static string GetVersionMarkerPath(string executablePath) => Path.Combine(Path.GetDirectoryName(executablePath)!, "version.txt");
-
-    private sealed record TrivyRelease(string TagName, string DownloadUrl);
-
-    private sealed class GitHubReleaseDto
+    private async Task<string?> GetUsableVersionAsync(string? executablePath, CancellationToken cancellationToken)
     {
-        [JsonPropertyName("tag_name")]
-        public string TagName { get; set; } = string.Empty;
+        if (string.IsNullOrWhiteSpace(executablePath) || !File.Exists(executablePath))
+        {
+            return null;
+        }
 
-        public List<GitHubReleaseAssetDto>? Assets { get; set; }
+        try
+        {
+            return await trivyService.GetVersionAsync(executablePath, cancellationToken);
+        }
+        catch when (!cancellationToken.IsCancellationRequested)
+        {
+            return null;
+        }
     }
 
-    private sealed class GitHubReleaseAssetDto
+    private async Task<(string? Path, string? VersionText, Version? Version)> FindUsableExistingAsync(AppSettings settings, string managedPath, CancellationToken cancellationToken)
     {
-        public string Name { get; set; } = string.Empty;
+        var candidates = new[]
+        {
+            !string.IsNullOrWhiteSpace(settings.TrivyPath) && File.Exists(settings.TrivyPath) ? settings.TrivyPath : null,
+            File.Exists(managedPath) ? managedPath : null,
+            PathEnvironment.FindExecutable("trivy")
+        }
+        .Where(path => !string.IsNullOrWhiteSpace(path))
+        .Distinct(StringComparer.OrdinalIgnoreCase);
 
-        [JsonPropertyName("browser_download_url")]
-        public string BrowserDownloadUrl { get; set; } = string.Empty;
+        var usable = new List<(string Path, string VersionText, Version Version)>();
+        foreach (var candidate in candidates)
+        {
+            var versionText = await GetUsableVersionAsync(candidate, cancellationToken);
+            if (ParseVersion(versionText) is { } version)
+            {
+                usable.Add((candidate!, versionText!, version));
+            }
+        }
+
+        var selected = usable
+            .OrderByDescending(candidate => candidate.Version)
+            .ThenByDescending(candidate => PathsEqual(candidate.Path, managedPath))
+            .FirstOrDefault();
+        return selected.Path is null
+            ? (null, null, null)
+            : selected;
     }
+
+    private static Version? ParseVersion(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        var match = VersionRegex().Match(value);
+        return match.Success && Version.TryParse(match.Value, out var version) ? version : null;
+    }
+
+    private static async Task ValidateSha256Async(string path, string expectedSha256, CancellationToken cancellationToken)
+    {
+        await using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 81920, useAsync: true);
+        var actualHash = await SHA256.HashDataAsync(stream, cancellationToken);
+        var actualSha256 = Convert.ToHexStringLower(actualHash);
+        if (!actualSha256.Equals(expectedSha256, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException("O pacote baixado do Trivy falhou na validação SHA-256.");
+        }
+    }
+
+    private static bool PathsEqual(string? left, string right)
+    {
+        return !string.IsNullOrWhiteSpace(left)
+            && Path.GetFullPath(left).Equals(Path.GetFullPath(right), StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static void DeleteFileIfExists(string path)
+    {
+        if (File.Exists(path))
+        {
+            File.Delete(path);
+        }
+    }
+
+    [GeneratedRegex(@"(?<!\d)\d+\.\d+\.\d+(?:\.\d+)?(?!\d)", RegexOptions.CultureInvariant)]
+    private static partial Regex VersionRegex();
 }

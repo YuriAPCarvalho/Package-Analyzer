@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using System.Text;
 using TrivyProjectManager.Application.Abstractions;
 using TrivyProjectManager.Application.DTOs;
 using TrivyProjectManager.Application.Services;
@@ -311,7 +312,7 @@ public sealed class ScanOrchestrator(
 
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         var content = string.Join(Environment.NewLine, lines.Select(line => $"[{line.At:O}] {line.Stream}: {line.Message}"));
-        await File.WriteAllTextAsync(path, content, cancellationToken);
+        await File.WriteAllTextAsync(path, content, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false), cancellationToken);
     }
 
     private static void PrepareFindingsForInsert(Guid scanId, IEnumerable<Finding> findings)

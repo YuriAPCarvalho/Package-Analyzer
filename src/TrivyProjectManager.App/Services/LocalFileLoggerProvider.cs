@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using System.Text;
 using TrivyProjectManager.Application.Services;
 
 namespace TrivyProjectManager.App.Services;
@@ -35,7 +36,10 @@ public sealed class LocalFileLoggerProvider : ILoggerProvider
                 message += Environment.NewLine + masking.Mask(exception.ToString());
             }
 
-            File.AppendAllText(path, $"[{DateTimeOffset.UtcNow:O}] {logLevel} {category}: {message}{Environment.NewLine}");
+            File.AppendAllText(
+                path,
+                $"[{DateTimeOffset.UtcNow:O}] {logLevel} {category}: {message}{Environment.NewLine}",
+                new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
         }
 
         private static void Rotate(string path)

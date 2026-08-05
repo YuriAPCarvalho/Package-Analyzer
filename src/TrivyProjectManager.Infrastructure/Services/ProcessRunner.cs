@@ -68,6 +68,8 @@ public sealed class ProcessRunner : IProcessRunner
             WorkingDirectory = request.WorkingDirectory,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
+            StandardOutputEncoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false),
+            StandardErrorEncoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false),
             UseShellExecute = false,
             CreateNoWindow = true
         };
@@ -105,8 +107,9 @@ public sealed class ProcessRunner : IProcessRunner
             return;
         }
 
-        builder.AppendLine(message);
-        progress?.Report(new ProcessLogLine(DateTimeOffset.UtcNow, stream, message));
+        var sanitized = ProcessOutputSanitizer.Sanitize(message);
+        builder.AppendLine(sanitized);
+        progress?.Report(new ProcessLogLine(DateTimeOffset.UtcNow, stream, sanitized));
     }
 
     private static void KillProcess(Process process)
