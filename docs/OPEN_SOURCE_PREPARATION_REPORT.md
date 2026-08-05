@@ -8,7 +8,9 @@
 - Workflow de release atualizado para publicar no proprio repositorio usando `GITHUB_TOKEN`.
 - Repositorio principal tornado publico e licenca MIT detectada pelo GitHub.
 - Repositorio `Package-Analyzer-Download` nao encontrado na verificacao final.
-- Correcao do YAML de release e CI com actionlint, build e testes preparados localmente; commit, push e execucao do CI ainda pendentes.
+- Correcao do YAML de release e CI com actionlint, build e testes publicados e executados com sucesso.
+- Release publica `v0.1.1` criada a partir do commit `eee351b2ea5a57e4325800a97029d2544e69c235`.
+- Seis artefatos de aplicacao publicados com hashes verificados por `SHA256SUMS.txt`.
 
 ## Seguranca
 
@@ -43,12 +45,12 @@ gitleaks detect --source . --redact --verbose
 - Checksums SHA-256 sao publicados em `SHA256SUMS.txt`.
 - Nenhum `PUBLIC_RELEASE_TOKEN` e necessario no modelo de repo unico.
 - A tag remota `v0.1.0` aponta para `14d075a`; suas execucoes falharam no workflow legado e nenhuma GitHub Release foi publicada.
-- A primeira release valida e `v0.1.1`; a autorizacao foi concedida e a tag deve ser criada somente apos o commit de versao, push e CI verde.
+- A release `v0.1.1` foi publicada com provenance, aviso de artefatos nao assinados e checksums SHA-256.
 
 ## SignPath
 
 - Integracao SignPath Foundation: planned / application pending.
-- Pendentes manuais: revisar e publicar as correcoes locais, ativar Private Vulnerability Reporting, confirmar 2FA, publicar a primeira release valida, enviar o formulario, configurar a integracao apos aprovacao e aprovar manualmente cada assinatura.
+- Pendentes manuais: ativar Private Vulnerability Reporting, confirmar 2FA, enviar o formulario, configurar a integracao apos aprovacao e aprovar manualmente cada assinatura.
 - Limitacao: enquanto a aprovacao nao existir, os binarios seguem sem assinatura digital.
 
 ## Comandos validados
@@ -106,13 +108,10 @@ Resultado: nenhum match de PAT GitHub, chave privada ou bearer token literal.
 
 ## Pendencias manuais
 
-- Revisar o diff local das correcoes.
-- Autorizar separadamente commit e push para `main`.
-- Confirmar o novo CI verde no GitHub antes de qualquer tag.
 - Ativar Private Vulnerability Reporting.
 - Ativar 2FA.
-- Criar a tag imutavel `v0.1.1` somente depois do CI verde do commit de versao.
-- Conferir a release, os artefatos Velopack e `SHA256SUMS.txt`.
+- Manter a tag `v0.1.1` imutavel.
+- Preservar os avisos de artefatos nao assinados ate a integracao SignPath estar ativa.
 - Enviar a solicitacao a SignPath Foundation.
 - Configurar a integracao SignPath apos aprovacao.
 - Aprovar manualmente cada solicitacao de assinatura.

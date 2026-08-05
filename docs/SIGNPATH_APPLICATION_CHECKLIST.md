@@ -7,20 +7,20 @@
 - [x] GitHub Actions publicado
 - [x] README completo
 - [x] Pagina de download documentada no proprio GitHub Releases
-- [ ] Primeira release publica disponivel
+- [x] Primeira release publica disponivel
 - [x] Politica de privacidade publicada
 - [x] Code signing policy publicada
 - [x] Papeis de committer/reviewer/approver publicados
 - [ ] 2FA habilitado no GitHub
 - [ ] 2FA preparado para a conta SignPath
-- [ ] Build automatizado e verificavel
+- [x] Build automatizado e verificavel
 - [x] Metadados do executavel consistentes
 - [x] Changelog disponivel
-- [ ] Checksums SHA-256 publicados
+- [x] Checksums SHA-256 publicados
 - [x] THIRD_PARTY_NOTICES revisado
 - [x] Nenhum segredo no codigo ou historico
-- [ ] Release aponta para o codigo-fonte exato
-- [ ] Uma release ja foi publicada no formato que devera ser assinado
+- [x] Release aponta para o codigo-fonte exato
+- [x] Uma release ja foi publicada no formato que devera ser assinado
 - [ ] Formulario da SignPath Foundation enviado manualmente
 
 ## Estado verificado em 2026-08-05
@@ -28,8 +28,9 @@
 - O repositorio `YuriAPCarvalho/Package-Analyzer` esta publico e o GitHub detecta a licenca MIT.
 - O repositorio `YuriAPCarvalho/Package-Analyzer-Download` nao foi encontrado e nao participa mais do fluxo.
 - A tag `v0.1.0` permanece no commit `14d075a`, mas nenhuma GitHub Release foi publicada para ela.
-- A correcao do workflow e o novo CI estao preparados localmente; o build automatizado so deve ser marcado como verificado depois de commit, push e CI verde.
-- A primeira release valida e `v0.1.1`; a autorizacao foi concedida e a tag deve ser criada somente apos o CI verde do commit de versao.
+- O CI e o workflow de release estao publicados e foram executados com sucesso.
+- A release `v0.1.1` foi publicada a partir do commit `eee351b2ea5a57e4325800a97029d2544e69c235`.
+- `SHA256SUMS.txt` foi publicado e seus seis hashes coincidem com os digests dos assets armazenados pelo GitHub.
 - Private Vulnerability Reporting permanece desativado e deve ser habilitado manualmente.
 - Os artefatos permanecem sem assinatura; a integracao SignPath Foundation continua como planned / application pending.
 
@@ -43,7 +44,7 @@
 - Code signing policy: `CODE_SIGNING_POLICY.md`
 - Politica de privacidade: `PRIVACY.md`
 - Workflow de build: `.github/workflows/release.yml`
-- Release de exemplo: preencher manualmente apos a primeira release publica.
+- Release de exemplo: `https://github.com/YuriAPCarvalho/Package-Analyzer/releases/tag/v0.1.1`
 
 ## Pontos de atencao
 
