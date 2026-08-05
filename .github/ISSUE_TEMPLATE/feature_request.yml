@@ -1,0 +1,33 @@
+name: Feature request
+description: Suggest an improvement for Package-Analyzer
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What problem would this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposed-solution
+    attributes:
+      label: Proposed solution
+      description: What should Package-Analyzer do?
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: textarea
+    id: impact
+    attributes:
+      label: Impact
+      description: Who benefits and what workflow changes?
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context

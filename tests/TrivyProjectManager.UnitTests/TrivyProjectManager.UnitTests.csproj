@@ -15,6 +15,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\TrivyProjectManager.Application\TrivyProjectManager.Application.csproj" />
+    <ProjectReference Include="..\..\src\TrivyProjectManager.App\TrivyProjectManager.App.csproj" />
     <ProjectReference Include="..\..\src\TrivyProjectManager.Domain\TrivyProjectManager.Domain.csproj" />
     <ProjectReference Include="..\..\src\TrivyProjectManager.Infrastructure\TrivyProjectManager.Infrastructure.csproj" />
   </ItemGroup>

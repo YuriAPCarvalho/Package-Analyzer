@@ -102,7 +102,7 @@ public sealed class ParserAndDomainTests
 
         var finding = Assert.Single(findings);
         Assert.Equal(FindingType.Secret, finding.FindingType);
-        Assert.DoesNotContain("ABCDEFGHIJKLMNOPQRSTUVXYZ", finding.MaskedCodeSnippet);
+        Assert.DoesNotContain("FAKE_SAMPLE_SECRET_VALUE", finding.MaskedCodeSnippet);
         Assert.Contains("***", finding.MaskedCodeSnippet);
     }
 

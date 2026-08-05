@@ -1,11 +1,30 @@
 using TrivyProjectManager.Application.Abstractions;
 using TrivyProjectManager.Application.DTOs;
 using TrivyProjectManager.Application.Services;
+using TrivyProjectManager.App.Services;
 
 namespace TrivyProjectManager.UnitTests;
 
 public sealed class ApplicationUpdateServiceTests
 {
+    [Fact]
+    public void OfficialUpdateRepositoryUsesMainRepository()
+    {
+        Assert.Equal("https://github.com/YuriAPCarvalho/Package-Analyzer", VelopackApplicationUpdateClient.RepositoryUrl);
+    }
+
+    [Fact]
+    public void ExternalVulnerabilityEnrichmentIsOptInByDefault()
+    {
+        var settings = new AppSettings();
+
+        Assert.False(settings.EnableVulnerabilityEnrichment);
+        Assert.False(settings.EnableNvdEnrichment);
+        Assert.False(settings.EnableOsvEnrichment);
+        Assert.False(settings.EnableGitHubAdvisoryEnrichment);
+        Assert.Null(settings.GitHubAdvisoryToken);
+    }
+
     [Fact]
     public async Task CheckForUpdatesReturnsUpToDateWhenNoPackageExists()
     {

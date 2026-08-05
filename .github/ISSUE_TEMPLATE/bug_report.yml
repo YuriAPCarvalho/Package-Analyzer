@@ -1,0 +1,61 @@
+name: Bug report
+description: Report a reproducible problem in Package-Analyzer
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please remove secrets, private paths, customer data, and sensitive scan output before submitting.
+  - type: input
+    id: app-version
+    attributes:
+      label: Application version
+      description: Example: 0.1.0
+    validations:
+      required: true
+  - type: input
+    id: windows-version
+    attributes:
+      label: Windows version
+      description: Example: Windows 11 24H2 x64
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: List the exact steps needed to reproduce the problem.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: observed
+    attributes:
+      label: Observed behavior
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Sanitized logs
+      description: Paste only redacted logs. Do not include tokens, paths that must remain private, or unmasked secrets.
+      render: text
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots
+      description: Drag sanitized screenshots here if useful.
+  - type: checkboxes
+    id: confirmation
+    attributes:
+      label: Submission safety
+      options:
+        - label: I confirm this issue does not include secrets, credentials, private source code, or unredacted sensitive scan output.
+          required: true
