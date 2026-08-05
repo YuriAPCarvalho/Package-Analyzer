@@ -125,15 +125,18 @@ https://github.com/YuriAPCarvalho/Package-Analyzer/releases
 Para criar uma nova versão:
 
 ```powershell
-git tag v0.1.0
-git push origin v0.1.0
+$tag = "v0.1.1"
+git tag $tag
+git push origin $tag
 ```
 
 Cada tag deve seguir o padrão `vMAJOR.MINOR.PATCH` e possuir uma seção correspondente no `CHANGELOG.md`, por exemplo:
 
 ```md
-## [0.1.0]
+## [0.1.1]
 ```
+
+Tags de release são imutáveis: nunca mova ou reutilize uma tag já publicada. A tag `v0.1.0` foi preservada como registro de uma tentativa de publicação que falhou antes da migração para o modelo de repositório único. A primeira release válida planejada é `v0.1.1`, e sua tag só deve ser criada com autorização explícita do mantenedor.
 
 O workflow `.github/workflows/release.yml` restaura, compila, testa, publica o aplicativo self-contained, empacota com Velopack, gera o arquivo `SHA256SUMS.txt` e publica os artefatos no GitHub Release deste repositório.
 

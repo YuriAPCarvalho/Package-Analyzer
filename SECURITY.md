@@ -2,7 +2,7 @@
 
 ## Supported versions
 
-Security fixes are provided for the latest public release and the current `main` branch after the repository becomes public.
+Security fixes are provided for the latest public release and the current `main` branch.
 
 ## Reporting a vulnerability
 
