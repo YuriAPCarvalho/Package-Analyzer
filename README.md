@@ -75,7 +75,7 @@ O scan completo mostra aviso porque restore/install/build/test podem executar sc
 
 ## Privacidade
 
-O Package-Analyzer by: YuriAPCarvalho foi desenvolvido para funcionar de forma local-first. Não há login, telemetria, analytics, upload automático, integração em nuvem ou enriquecimento externo de CVEs nesta versão.
+O Package-Analyzer foi desenvolvido para funcionar de forma local-first. Não há login, telemetria, analytics, upload automático, integração em nuvem ou enriquecimento externo de CVEs nesta versão.
 
 A aplicação não envia código-fonte, relatórios, nomes de projetos, caminhos locais ou resultados de scans para serviços externos. Os scans são executados pelo Trivy local.
 

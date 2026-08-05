@@ -135,7 +135,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
         set => SetProperty(ref _progressText, value);
     }
 
-    public string ApplicationInstalledVersion => _applicationUpdateService.InstalledVersion;
+    public string ApplicationInstalledVersion => TrimBuildMetadata(_applicationUpdateService.InstalledVersion);
 
     private string _applicationUpdateStatusText = "Aguardando";
     public string ApplicationUpdateStatusText
@@ -559,6 +559,12 @@ public sealed partial class MainWindowViewModel : ObservableObject
     private static string FormatLastUpdateCheck(DateTimeOffset value)
     {
         return value.ToLocalTime().ToString("g");
+    }
+
+    private static string TrimBuildMetadata(string version)
+    {
+        var metadataIndex = version.IndexOf('+', StringComparison.Ordinal);
+        return metadataIndex < 0 ? version : version[..metadataIndex];
     }
 
     [RelayCommand]

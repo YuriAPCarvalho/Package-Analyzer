@@ -449,7 +449,7 @@
                 FontSize="16"
                 TextWrapping="Wrap"
                 TextAlignment="Justify"
-                Text="O Package Analyzer é uma ferramenta desktop desenvolvida por YuriAPCarvalho para auxiliar desenvolvedores e equipes de tecnologia na identificação, análise e gerenciamento de vulnerabilidades em projetos de software." />
+                Text="O Package Analyzer é uma ferramenta desktop desenvolvida para auxiliar desenvolvedores e equipes de tecnologia na identificação, análise e gerenciamento de vulnerabilidades em projetos de software." />
 
             <TextBlock
                 FontSize="16"
@@ -505,7 +505,7 @@
                 HorizontalAlignment="Center"
                 FontSize="13"
                 Opacity="0.70"
-                Text="{Binding ApplicationInstalledVersion}" />
+                Text="{Binding ApplicationInstalledVersion, StringFormat='Versão: {0}'}" />
 
         </StackPanel>
     </ScrollViewer>
