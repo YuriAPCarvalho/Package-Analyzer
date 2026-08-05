@@ -87,6 +87,8 @@ jobs:
       - name: Upload GitHub Release
         run: |
           vpk upload github `
+            --outputDir Releases `
+            --channel stable `
             --repoUrl https://github.com/YuriAPCarvalho/Package-Analyzer-Download `
             --token ${{ secrets.PUBLIC_RELEASE_TOKEN }} `
             --publish `
