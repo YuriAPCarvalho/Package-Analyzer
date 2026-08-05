@@ -7,11 +7,11 @@ SPDX-License-Identifier: MIT
 [![Release](https://github.com/YuriAPCarvalho/Package-Analyzer/actions/workflows/release.yml/badge.svg)](https://github.com/YuriAPCarvalho/Package-Analyzer/actions/workflows/release.yml)
 [![GitHub release](https://img.shields.io/github/v/release/YuriAPCarvalho/Package-Analyzer)](https://github.com/YuriAPCarvalho/Package-Analyzer/releases/latest)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Windows](https://img.shields.io/badge/platform-Windows-0078d4.svg)](#instalacao)
+[![Windows](https://img.shields.io/badge/platform-Windows-0078d4.svg)](#instalação)
 [![.NET](https://img.shields.io/badge/.NET-9.0-512bd4.svg)](#desenvolvimento)
 [![Open Source](https://img.shields.io/badge/status-open%20source-brightgreen.svg)](CONTRIBUTING.md)
 
-O Package-Analyzer e uma aplicacao desktop local-first para preparar projetos, executar analises de seguranca, organizar vulnerabilidades, acompanhar o historico de scans e apresentar correcoes de forma clara.
+O Package-Analyzer é uma aplicação desktop **local-first** para preparar projetos, executar análises de segurança, organizar vulnerabilidades, acompanhar o histórico de scans e apresentar correções de forma clara.
 
 Trivy is an open-source project maintained by Aqua Security and is used as one of the local analysis engines supported by Package-Analyzer.
 
@@ -20,73 +20,78 @@ Package-Analyzer is an independent open-source project and is not affiliated wit
 ## Funcionalidades
 
 - Cadastro de projetos locais.
-- Deteccao de projetos .NET, NPM, pnpm e Yarn.
-- Scan rapido com Trivy local.
-- Scan completo com restore/install/build/test configuraveis antes da analise.
-- Dashboard por severidade, vulnerabilidades unicas, misconfigurations e secrets.
-- Detalhes de CVE/GHSA, pacote afetado, versao instalada, versao corrigida e referencias HTTPS.
-- Agrupamento de ocorrencias equivalentes.
-- Historico de scans, comparacao com scan anterior e classificacao de novos, existentes, regressao e resolvidos.
+- Detecção de projetos .NET, NPM, pnpm e Yarn.
+- Scan rápido com Trivy local.
+- Scan completo com restore/install/build/test configuráveis antes da análise.
+- Dashboard por severidade, vulnerabilidades únicas, misconfigurations e secrets.
+- Detalhes de CVE/GHSA, pacote afetado, versão instalada, versão corrigida e referências HTTPS.
+- Agrupamento de ocorrências equivalentes.
+- Histórico de scans, comparação com o scan anterior e classificação de novos, existentes, regressões e resolvidos.
 - Misconfigurations e secrets em abas dedicadas.
-- Mascaramento de secrets antes da exibicao e persistencia.
-- Banco SQLite e configuracoes armazenados localmente.
-- Atualizacoes automaticas via Velopack quando instalado pelo instalador oficial.
+- Mascaramento de secrets antes da exibição e persistência.
+- Banco SQLite e configurações armazenados localmente.
+- Atualizações automáticas via Velopack quando instalado pelo instalador oficial.
 - Instalador Windows x64 gerado pelo workflow de release.
 
 ## Screenshots
 
-As imagens publicas do aplicativo devem ficar em `docs/images/`.
+As imagens públicas do aplicativo devem ficar em `docs/images/`.
 
-Quando novas screenshots forem adicionadas, remova esta nota e referencie os arquivos versionados aqui.
+Quando novas screenshots forem adicionadas, remova esta nota e referencie os arquivos versionados nesta seção.
 
-## Instalacao
+## Instalação
 
-O alvo inicial e Windows x64.
+O alvo inicial é o Windows x64.
 
-1. Abra a pagina oficial de releases: https://github.com/YuriAPCarvalho/Package-Analyzer/releases/latest
+1. Abra a página oficial de Releases: https://github.com/YuriAPCarvalho/Package-Analyzer/releases/latest
 2. Baixe `YuriAPCarvalho.PackageAnalyzer-stable-Setup.exe`.
 3. Confira o hash SHA-256 no arquivo `SHA256SUMS.txt` publicado na mesma release.
 4. Execute o instalador.
 
-## Aviso de seguranca
+## Aviso de segurança
 
-O aplicativo ainda nao possui assinatura digital.
+O aplicativo ainda não possui assinatura digital.
 
-Por esse motivo, o Windows SmartScreen pode exibir um alerta durante a instalacao ou na primeira execucao.
+Por esse motivo, o Windows SmartScreen pode exibir um alerta durante a instalação ou na primeira execução.
 
-Baixe o aplicativo somente por meio do repositorio oficial e confirme que o arquivo foi obtido pela pagina de Releases.
+Baixe o aplicativo somente por meio do repositório oficial e confirme que o arquivo foi obtido pela página de Releases.
 
-Confira tambem o checksum SHA-256 publicado junto ao instalador.
+Confira também o checksum SHA-256 publicado junto ao instalador.
 
 ## Dados locais
 
 - Banco SQLite: `%LOCALAPPDATA%\TrivyProjectManager\data\trivy-project-manager.db`
-- Configuracoes: `%LOCALAPPDATA%\TrivyProjectManager\settings.json`
-- Relatorios centrais: `%LOCALAPPDATA%\TrivyProjectManager\Projects\<project-id>\reports\`
+- Configurações: `%LOCALAPPDATA%\TrivyProjectManager\settings.json`
+- Relatórios centrais: `%LOCALAPPDATA%\TrivyProjectManager\Projects\<project-id>\reports\`
 - Logs centrais: `%LOCALAPPDATA%\TrivyProjectManager\Projects\<project-id>\logs\`
 - Armazenamento no projeto, quando habilitado: `.security/trivy/`
 
-A desinstalacao do aplicativo remove a instalacao, mas os dados locais podem permanecer em `%LOCALAPPDATA%\TrivyProjectManager` para preservar historico e configuracoes.
+A desinstalação do aplicativo remove a instalação, mas os dados locais podem permanecer em `%LOCALAPPDATA%\TrivyProjectManager` para preservar o histórico e as configurações.
 
 ## Privacidade
 
-O Package-Analyzer nao exige login, nao possui telemetria e nao envia automaticamente codigo-fonte, nomes de projetos, caminhos locais, relatorios ou resultados de scans para servicos externos.
+O Package-Analyzer não exige login, não possui telemetria e não envia automaticamente código-fonte, nomes de projetos, caminhos locais, relatórios ou resultados de scans para serviços externos.
 
-A aplicacao pode acessar a internet para verificar e baixar atualizacoes oficiais do Package-Analyzer, baixar ou atualizar o Trivy gerenciado localmente, permitir que o Trivy atualize bases publicas de vulnerabilidades e abrir referencias externas quando o usuario solicitar.
+A aplicação pode acessar a internet para:
 
-O enriquecimento externo por NVD, OSV ou GitHub Advisory e opt-in e vem desativado por padrao. Quando habilitado, apenas identificadores publicos como CVE ou GHSA sao consultados; o conteudo dos projetos analisados nao e enviado.
+- Verificar e baixar atualizações oficiais do Package-Analyzer.
+- Baixar ou atualizar o Trivy gerenciado localmente.
+- Permitir que o Trivy atualize as bases públicas de vulnerabilidades.
+- Abrir referências externas quando solicitado pelo usuário.
+
+O enriquecimento externo por NVD, OSV ou GitHub Advisory é **opt-in** e vem desativado por padrão. Quando habilitado, apenas identificadores públicos, como CVE ou GHSA, são consultados; o conteúdo dos projetos analisados não é enviado.
 
 Veja [PRIVACY.md](PRIVACY.md).
 
 ## Desenvolvimento
 
-Requisitos:
+### Requisitos
 
 - .NET SDK 9.0.
-- Windows para validar instalador, atalhos e experiencia desktop alvo.
-- Trivy instalado localmente ou instalacao automatica habilitada no app.
+- Windows para validar o instalador, atalhos e a experiência desktop.
+- Trivy instalado localmente ou instalação automática habilitada no aplicativo.
 
-Comandos principais:
+### Comandos principais
 
 ```powershell
 dotnet restore TrivyProjectManager.sln -m:1 -nr:false
@@ -95,36 +100,42 @@ dotnet test TrivyProjectManager.sln --configuration Release --no-build -m:1 -nr:
 dotnet run --project src\TrivyProjectManager.App\TrivyProjectManager.App.csproj
 ```
 
-Estrutura:
+### Estrutura
 
 ```text
 src/
   TrivyProjectManager.App/             Avalonia UI, ViewModels, DI e Velopack
-  TrivyProjectManager.Application/     Contratos, DTOs, parser e regras de aplicacao
-  TrivyProjectManager.Domain/          Entidades, enums e chaves logicas
-  TrivyProjectManager.Infrastructure/  SQLite, processos, Trivy, storage e retencao
+  TrivyProjectManager.Application/     Contratos, DTOs, parser e regras de aplicação
+  TrivyProjectManager.Domain/          Entidades, enums e chaves lógicas
+  TrivyProjectManager.Infrastructure/  SQLite, processos, Trivy, storage e retenção
 tests/
   TrivyProjectManager.UnitTests/
   TrivyProjectManager.IntegrationTests/
 samples/trivy-reports/
 ```
 
-O app tenta localizar `trivy.exe` pelo `PATH` ou pelo caminho configurado. Se a instalacao automatica estiver habilitada, baixa a release Windows x64 do Trivy em `%LOCALAPPDATA%\TrivyProjectManager\tools\trivy\trivy.exe`.
+O aplicativo tenta localizar `trivy.exe` pelo `PATH` ou pelo caminho configurado. Se a instalação automática estiver habilitada, baixa a release Windows x64 do Trivy em `%LOCALAPPDATA%\TrivyProjectManager\tools\trivy\trivy.exe`.
 
 ## Releases
 
-As releases oficiais ficam neste repositorio: https://github.com/YuriAPCarvalho/Package-Analyzer/releases
+As releases oficiais ficam neste repositório:
 
-Para criar uma nova versao:
+https://github.com/YuriAPCarvalho/Package-Analyzer/releases
+
+Para criar uma nova versão:
 
 ```powershell
 git tag v0.1.0
 git push origin v0.1.0
 ```
 
-Cada tag deve usar `vMAJOR.MINOR.PATCH` e ter uma secao correspondente no `CHANGELOG.md`, por exemplo `## [0.1.0]`.
+Cada tag deve seguir o padrão `vMAJOR.MINOR.PATCH` e possuir uma seção correspondente no `CHANGELOG.md`, por exemplo:
 
-O workflow `.github/workflows/release.yml` restaura, compila, testa, publica o app self-contained, empacota com Velopack, gera `SHA256SUMS.txt` e publica os artefatos no GitHub Release do proprio repositorio.
+```md
+## [0.1.0]
+```
+
+O workflow `.github/workflows/release.yml` restaura, compila, testa, publica o aplicativo self-contained, empacota com Velopack, gera o arquivo `SHA256SUMS.txt` e publica os artefatos no GitHub Release deste repositório.
 
 ## Code signing policy
 
@@ -132,7 +143,7 @@ SignPath Foundation integration: planned / application pending.
 
 Veja [CODE_SIGNING_POLICY.md](CODE_SIGNING_POLICY.md).
 
-## Documentacao
+## Documentação
 
 - [Privacy policy](PRIVACY.md)
 - [Security policy](SECURITY.md)
