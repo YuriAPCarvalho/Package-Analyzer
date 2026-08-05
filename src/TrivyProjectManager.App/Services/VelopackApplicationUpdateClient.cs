@@ -11,7 +11,7 @@ namespace TrivyProjectManager.App.Services;
 
 public sealed class VelopackApplicationUpdateClient : IApplicationUpdateClient
 {
-    private const string RepositoryUrl = "https://github.com/YuriAPCarvalho/Package-Analyzer";
+    private const string RepositoryUrl = "https://github.com/YuriAPCarvalho/Package-Analyzer-Download";
     private readonly ConcurrentDictionary<string, UpdateInfo> _updates = new(StringComparer.OrdinalIgnoreCase);
 
     public string InstalledVersion

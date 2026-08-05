@@ -99,7 +99,9 @@ Os testes cobrem detecção de projeto, parser do JSON do Trivy, deduplicação,
 
 ## Publicação e Atualizações
 
-A distribuição Windows x64 usa Velopack e GitHub Releases públicos em `https://github.com/YuriAPCarvalho/Package-Analyzer`.
+A distribuição Windows x64 usa Velopack e GitHub Releases públicos em `https://github.com/YuriAPCarvalho/Package-Analyzer-Download`.
+
+Este repositório contém o código-fonte privado do Package-Analyzer. O repositório público `Package-Analyzer-Download` deve conter apenas documentação pública e artefatos de release para download, sem `src/`, `tests/`, migrations, solution files ou samples internos.
 
 Os assets de marca ficam em `src\TrivyProjectManager.App\Assets`: `app-icon.ico` é usado pelo executável, janelas, taskbar e atalhos do Windows; `app-logo.png` é usado no splash da instalação e na interface.
 
@@ -110,7 +112,9 @@ git tag v0.1.0
 git push origin v0.1.0
 ```
 
-O workflow `.github/workflows/release.yml` restaura, compila, testa, publica o app self-contained, empacota com `vpk pack` e envia os artefatos para o GitHub Release. Cada tag `vMAJOR.MINOR.PATCH` precisa ter uma seção correspondente no `CHANGELOG.md`, por exemplo `## [0.1.0]`.
+O workflow `.github/workflows/release.yml` restaura, compila, testa, publica o app self-contained, empacota com `vpk pack` e envia os artefatos para o GitHub Release público. Cada tag `vMAJOR.MINOR.PATCH` precisa ter uma seção correspondente no `CHANGELOG.md`, por exemplo `## [0.1.0]`.
+
+Para publicar no repositório público, configure no repositório privado o secret `PUBLIC_RELEASE_TOKEN` com um fine-grained PAT com acesso ao repositório `Package-Analyzer-Download` e permissão `Contents: Read and write`.
 
 A assinatura digital ainda não está ativa. Quando houver certificado ou Azure Trusted Signing configurado, adicione `--signParams` ou `--azureTrustedSignFile` no passo `Pack Velopack release` do workflow.
 

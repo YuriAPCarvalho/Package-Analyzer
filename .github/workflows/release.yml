@@ -62,7 +62,7 @@ jobs:
 
       - name: Download previous Velopack release
         continue-on-error: true
-        run: vpk download github --repoUrl https://github.com/${{ github.repository }} --token ${{ secrets.GITHUB_TOKEN }} --channel stable --outputDir Releases
+        run: vpk download github --repoUrl https://github.com/YuriAPCarvalho/Package-Analyzer-Download --token ${{ secrets.PUBLIC_RELEASE_TOKEN }} --channel stable --outputDir Releases
 
       - name: Pack Velopack release
         run: |
@@ -87,8 +87,8 @@ jobs:
       - name: Upload GitHub Release
         run: |
           vpk upload github `
-            --repoUrl https://github.com/${{ github.repository }} `
-            --token ${{ secrets.GITHUB_TOKEN }} `
+            --repoUrl https://github.com/YuriAPCarvalho/Package-Analyzer-Download `
+            --token ${{ secrets.PUBLIC_RELEASE_TOKEN }} `
             --publish `
             --releaseName "Package-Analyzer ${{ steps.version.outputs.version }}" `
             --tag ${{ github.ref_name }}
