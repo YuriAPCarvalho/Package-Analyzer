@@ -3,6 +3,7 @@ bin/
 obj/
 artifacts/
 publish/
+docs/
 
 # Local .NET/cache folders
 .dotnet/
