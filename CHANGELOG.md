@@ -10,7 +10,7 @@
 
 ### Security
 
-## [0.1.1] - planned
+## [0.1.1] - 2026-08-05
 
 ### Added
 
@@ -22,7 +22,7 @@
 ### Changed
 
 - Release distribution uses the main `Package-Analyzer` repository instead of a separate download repository.
-- Release tags are immutable and the next planned public version is `v0.1.1`.
+- Release tags are immutable, and `v0.1.1` is the first public release built from the single-repository workflow.
 
 ### Fixed
 

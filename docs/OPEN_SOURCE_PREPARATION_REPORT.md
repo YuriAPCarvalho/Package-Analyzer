@@ -22,7 +22,7 @@
 gitleaks detect --source . --redact --verbose
 ```
 
-- Resultado: 9 commits verificados e nenhum leak encontrado.
+- Resultado: historico versionado verificado e nenhum leak encontrado.
 - A verificacao complementar do working tree com `gitleaks dir . --redact --verbose` analisou aproximadamente 6,91 MB e tambem nao encontrou leaks.
 - A fixture de secret em `samples/trivy-reports/secret.json` usa valor fake e existe apenas para testar mascaramento.
 - Nenhum valor de secret real deve ser documentado ou exibido em logs.
@@ -43,7 +43,7 @@ gitleaks detect --source . --redact --verbose
 - Checksums SHA-256 sao publicados em `SHA256SUMS.txt`.
 - Nenhum `PUBLIC_RELEASE_TOKEN` e necessario no modelo de repo unico.
 - A tag remota `v0.1.0` aponta para `14d075a`; suas execucoes falharam no workflow legado e nenhuma GitHub Release foi publicada.
-- A primeira release valida planejada e `v0.1.1`, somente apos commit, push, CI verde e autorizacao explicita para a tag.
+- A primeira release valida e `v0.1.1`; a autorizacao foi concedida e a tag deve ser criada somente apos o commit de versao, push e CI verde.
 
 ## SignPath
 
@@ -83,7 +83,7 @@ Resultado: actionlint 1.7.12 validou `.github/workflows/ci.yml` e `.github/workf
 gitleaks detect --source . --redact --verbose
 ```
 
-Resultado: sucesso, 9 commits verificados e nenhum leak encontrado.
+Resultado: sucesso, historico versionado verificado e nenhum leak encontrado.
 
 ```powershell
 gitleaks dir . --redact --verbose
@@ -111,7 +111,7 @@ Resultado: nenhum match de PAT GitHub, chave privada ou bearer token literal.
 - Confirmar o novo CI verde no GitHub antes de qualquer tag.
 - Ativar Private Vulnerability Reporting.
 - Ativar 2FA.
-- Autorizar explicitamente a criacao da tag imutavel `v0.1.1`.
+- Criar a tag imutavel `v0.1.1` somente depois do CI verde do commit de versao.
 - Conferir a release, os artefatos Velopack e `SHA256SUMS.txt`.
 - Enviar a solicitacao a SignPath Foundation.
 - Configurar a integracao SignPath apos aprovacao.

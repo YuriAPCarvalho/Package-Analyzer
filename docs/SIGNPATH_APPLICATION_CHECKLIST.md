@@ -29,7 +29,7 @@
 - O repositorio `YuriAPCarvalho/Package-Analyzer-Download` nao foi encontrado e nao participa mais do fluxo.
 - A tag `v0.1.0` permanece no commit `14d075a`, mas nenhuma GitHub Release foi publicada para ela.
 - A correcao do workflow e o novo CI estao preparados localmente; o build automatizado so deve ser marcado como verificado depois de commit, push e CI verde.
-- A primeira release valida planejada e `v0.1.1`, sem criacao de tag ate autorizacao explicita.
+- A primeira release valida e `v0.1.1`; a autorizacao foi concedida e a tag deve ser criada somente apos o CI verde do commit de versao.
 - Private Vulnerability Reporting permanece desativado e deve ser habilitado manualmente.
 - Os artefatos permanecem sem assinatura; a integracao SignPath Foundation continua como planned / application pending.
 
