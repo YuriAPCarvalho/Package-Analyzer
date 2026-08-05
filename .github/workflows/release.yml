@@ -119,9 +119,11 @@ jobs:
         shell: pwsh
         run: |
           $cutoff = [DateTimeOffset]::new([long]"${{ steps.pack_start.outputs.ticks }}", [TimeSpan]::Zero).UtcDateTime
+          $version = "${{ steps.version.outputs.version }}"
           $assetDirectory = New-Item -ItemType Directory -Force -Path artifacts\release-assets
           $files = Get-ChildItem -LiteralPath Releases -File | Where-Object {
-            $_.LastWriteTimeUtc -ge $cutoff -or $_.Name -like "RELEASES*"
+            ($_.LastWriteTimeUtc -ge $cutoff -or $_.Name -like "RELEASES*") -and
+            ($_.Extension -ne ".nupkg" -or $_.Name -like "*-$version-*")
           } | Sort-Object Name
           if ($files.Count -eq 0) {
             throw "No Velopack release artifacts were generated."
