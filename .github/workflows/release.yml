@@ -1,0 +1,94 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+jobs:
+  release-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+
+      - name: Read version and release notes
+        id: version
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          if ($tag -notmatch '^v(?<version>\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?)$') {
+            throw "Tag '$tag' must use SemVer format like v0.1.0."
+          }
+
+          $version = $Matches.version
+          $changelog = Get-Content -LiteralPath CHANGELOG.md -Raw
+          $escapedVersion = [regex]::Escape($version)
+          $match = [regex]::Match($changelog, "(?ms)^## \[$escapedVersion\].*?(?=^## \[|\z)")
+          if (-not $match.Success) {
+            throw "CHANGELOG.md must contain a '## [$version]' section."
+          }
+
+          $notesPath = Join-Path $env:RUNNER_TEMP "release-notes.md"
+          Set-Content -LiteralPath $notesPath -Value $match.Value.Trim() -Encoding utf8
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "notes_path=$notesPath" >> $env:GITHUB_OUTPUT
+
+      - name: Restore
+        run: dotnet restore TrivyProjectManager.sln -m:1 -nr:false
+
+      - name: Build
+        run: dotnet build TrivyProjectManager.sln --configuration Release --no-restore -m:1 -nr:false -p:Version=${{ steps.version.outputs.version }} -p:InformationalVersion=${{ steps.version.outputs.version }}
+
+      - name: Test
+        run: dotnet test TrivyProjectManager.sln --configuration Release --no-build -m:1 -nr:false
+
+      - name: Publish Windows x64
+        run: dotnet publish src\TrivyProjectManager.App\TrivyProjectManager.App.csproj --configuration Release --runtime win-x64 --self-contained true --output artifacts\publish\win-x64 -p:Version=${{ steps.version.outputs.version }} -p:InformationalVersion=${{ steps.version.outputs.version }}
+
+      - name: Install Velopack CLI
+        run: dotnet tool install -g vpk --version 1.2.0
+
+      - name: Download previous Velopack release
+        continue-on-error: true
+        run: vpk download github --repoUrl https://github.com/${{ github.repository }} --token ${{ secrets.GITHUB_TOKEN }} --channel stable --outputDir Releases
+
+      - name: Pack Velopack release
+        run: |
+          vpk pack `
+            --packId YuriAPCarvalho.PackageAnalyzer `
+            --packTitle "Package-Analyzer" `
+            --packVersion ${{ steps.version.outputs.version }} `
+            --packDir artifacts\publish\win-x64 `
+            --mainExe Package-Analyzer.exe `
+            --channel stable `
+            --runtime win-x64 `
+            --outputDir Releases `
+            --icon src\TrivyProjectManager.App\Assets\app-icon.ico `
+            --splashImage src\TrivyProjectManager.App\Assets\app-logo.png `
+            --splashProgressColor "#20C997" `
+            --shortcuts "Desktop,StartMenuRoot" `
+            --releaseNotes "${{ steps.version.outputs.notes_path }}"
+          # Future Windows signing hooks:
+          # Add --signParams "<signtool arguments>" for an existing certificate, or
+          # add --azureTrustedSignFile "<metadata.json>" after configuring Azure Trusted Signing secrets.
+
+      - name: Upload GitHub Release
+        run: |
+          vpk upload github `
+            --repoUrl https://github.com/${{ github.repository }} `
+            --token ${{ secrets.GITHUB_TOKEN }} `
+            --publish `
+            --releaseName "Package-Analyzer ${{ steps.version.outputs.version }}" `
+            --tag ${{ github.ref_name }}

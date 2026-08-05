@@ -1,0 +1,29 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="TrivyProjectManager.App.Views.SecurityExceptionWindow"
+        Width="560"
+        Height="340"
+        MinWidth="520"
+        MinHeight="320"
+        WindowStartupLocation="CenterOwner"
+        Icon="/Assets/app-icon.ico"
+        Title="{Binding TitleText}">
+  <Grid RowDefinitions="Auto,*,Auto" Margin="20" RowSpacing="12">
+    <StackPanel Spacing="6">
+      <TextBlock Text="{Binding Message}" TextWrapping="Wrap" />
+      <TextBlock Text="Motivo" FontWeight="SemiBold" />
+    </StackPanel>
+    <StackPanel Grid.Row="1" Spacing="10">
+      <TextBox Name="ReasonBox" AcceptsReturn="True" MinHeight="110" TextWrapping="Wrap" />
+      <StackPanel Spacing="4">
+        <TextBlock Text="Validade opcional (yyyy-MM-dd)" FontWeight="SemiBold" />
+        <TextBox Name="ExpiresBox" />
+      </StackPanel>
+      <TextBlock Name="ErrorText" Foreground="#D13438" TextWrapping="Wrap" />
+    </StackPanel>
+    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+      <Button Content="Cancelar" Click="Cancel_Click" />
+      <Button Content="Criar exceção" Click="Ok_Click" />
+    </StackPanel>
+  </Grid>
+</Window>

@@ -16,6 +16,8 @@ public sealed class ScanOrchestrator(
     ITrivyReportParser reportParser,
     TrivyReportRedactionService redactionService,
     IScanComparisonService comparisonService,
+    IDependencyAnalysisService dependencyAnalysisService,
+    IVulnerabilityEnrichmentService vulnerabilityEnrichmentService,
     IAppSettingsService appSettingsService,
     IStoragePathService storagePathService,
     IRetentionService retentionService,
@@ -142,6 +144,8 @@ public sealed class ScanOrchestrator(
             progress?.Report(new ScanProgress("Parsing", CommandExecutionStatus.Running, totalSteps, totalSteps, $"{totalSteps} de {totalSteps} - Processando relatório"));
             await redactionService.RedactSecretsAsync(scan.RawReportPath, cancellationToken);
             var findings = (await reportParser.ParseAsync(scan.RawReportPath, cancellationToken)).ToList();
+            await dependencyAnalysisService.AnalyzeAsync(project, findings, cancellationToken);
+            await EnrichFindingsAsync(findings, cancellationToken);
             var previousScans = await dbContext.Scans
                 .AsNoTracking()
                 .Include(s => s.Findings)
@@ -153,6 +157,7 @@ public sealed class ScanOrchestrator(
                 .Where(f => f.Scan!.ProjectId == project.Id && f.ScanId != scan.Id)
                 .ToListAsync(cancellationToken);
             comparisonService.Classify(findings, previousScan?.Findings ?? [], olderFindings);
+            await ApplySecurityExceptionsAsync(project.Id, findings, cancellationToken);
 
             var counters = FindingCounterService.Calculate(findings);
             scan.CriticalCount = counters.Critical;
@@ -236,6 +241,60 @@ public sealed class ScanOrchestrator(
                 occurrence.Finding = null;
             }
         }
+    }
+
+    private async Task EnrichFindingsAsync(IEnumerable<Finding> findings, CancellationToken cancellationToken)
+    {
+        foreach (var finding in findings.Where(finding => finding.FindingType == FindingType.Vulnerability && !string.IsNullOrWhiteSpace(finding.VulnerabilityId)))
+        {
+            var enrichment = await vulnerabilityEnrichmentService.TryEnrichAsync(finding.VulnerabilityId!, cancellationToken);
+            if (enrichment is null)
+            {
+                continue;
+            }
+
+            finding.CvssScore ??= enrichment.CvssScore;
+            finding.CvssVector ??= enrichment.CvssVector;
+            finding.CvssSource ??= enrichment.Source;
+            finding.CweIds ??= enrichment.CweIds.Count == 0 ? null : string.Join(", ", enrichment.CweIds);
+            finding.EnrichmentSource = enrichment.Source;
+            finding.EnrichedAt = enrichment.RetrievedAt;
+        }
+    }
+
+    private async Task ApplySecurityExceptionsAsync(Guid projectId, IEnumerable<Finding> findings, CancellationToken cancellationToken)
+    {
+        var now = DateTimeOffset.UtcNow;
+        var exceptions = await dbContext.SecurityExceptions
+            .AsNoTracking()
+            .Where(exception => exception.ProjectId == projectId
+                && exception.IsActive
+                && (exception.ExpiresAt == null || exception.ExpiresAt > now))
+            .ToListAsync(cancellationToken);
+
+        foreach (var finding in findings)
+        {
+            if (exceptions.Any(exception => MatchesException(exception, finding)))
+            {
+                finding.Status = FindingLifecycleStatus.Ignored;
+            }
+        }
+    }
+
+    private static bool MatchesException(Domain.Entities.SecurityException exception, Finding finding)
+    {
+        if (!string.IsNullOrWhiteSpace(exception.FindingKey)
+            && exception.FindingKey.Equals(finding.FindingKey, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        return (string.IsNullOrWhiteSpace(exception.VulnerabilityId)
+                || exception.VulnerabilityId.Equals(finding.VulnerabilityId, StringComparison.OrdinalIgnoreCase))
+            && (string.IsNullOrWhiteSpace(exception.PackageName)
+                || exception.PackageName.Equals(finding.PackageName, StringComparison.OrdinalIgnoreCase))
+            && (string.IsNullOrWhiteSpace(exception.InstalledVersion)
+                || exception.InstalledVersion.Equals(finding.InstalledVersion, StringComparison.OrdinalIgnoreCase));
     }
 
     private void DetachPendingFindingGraph()

@@ -67,6 +67,9 @@ public sealed class TrivyVulnerabilityDto
     [JsonPropertyName("Severity")]
     public string? Severity { get; set; }
 
+    [JsonPropertyName("SeveritySource")]
+    public string? SeveritySource { get; set; }
+
     [JsonPropertyName("Status")]
     public string? Status { get; set; }
 
@@ -82,11 +85,38 @@ public sealed class TrivyVulnerabilityDto
     [JsonPropertyName("References")]
     public List<string>? References { get; set; }
 
+    [JsonPropertyName("CVSS")]
+    public Dictionary<string, TrivyCvssDto>? Cvss { get; set; }
+
+    [JsonPropertyName("CweIDs")]
+    public List<string>? CweIds { get; set; }
+
     [JsonPropertyName("PublishedDate")]
     public DateTimeOffset? PublishedDate { get; set; }
 
     [JsonPropertyName("LastModifiedDate")]
     public DateTimeOffset? LastModifiedDate { get; set; }
+}
+
+public sealed class TrivyCvssDto
+{
+    [JsonPropertyName("V2Vector")]
+    public string? V2Vector { get; set; }
+
+    [JsonPropertyName("V3Vector")]
+    public string? V3Vector { get; set; }
+
+    [JsonPropertyName("V40Vector")]
+    public string? V40Vector { get; set; }
+
+    [JsonPropertyName("V2Score")]
+    public decimal? V2Score { get; set; }
+
+    [JsonPropertyName("V3Score")]
+    public decimal? V3Score { get; set; }
+
+    [JsonPropertyName("V40Score")]
+    public decimal? V40Score { get; set; }
 }
 
 public sealed class TrivyMisconfigurationDto

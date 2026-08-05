@@ -1,6 +1,11 @@
+using System.Diagnostics;
+using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Controls;
+using Avalonia.Input.Platform;
 using Avalonia.Platform.Storage;
+using TrivyProjectManager.App.DTOs;
 using TrivyProjectManager.App.Views;
+using TrivyProjectManager.Application.DTOs;
 
 namespace TrivyProjectManager.App.Services;
 
@@ -44,5 +49,64 @@ public sealed class DialogService : IDialogService
 
         var window = new MessageWindow(title, message, showCancel: false);
         await window.ShowDialog<bool>(Owner);
+    }
+
+    public async Task<bool> ShowMandatoryUpdateAsync(ApplicationUpdateResult update, CancellationToken cancellationToken = default)
+    {
+        if (Owner is null)
+        {
+            return false;
+        }
+
+        var window = new ApplicationUpdateWindow(update);
+        return await window.ShowDialog<bool>(Owner);
+    }
+
+    public async Task CopyToClipboardAsync(string text, CancellationToken cancellationToken = default)
+    {
+        if (Owner?.Clipboard is not null)
+        {
+            await Owner.Clipboard.SetTextAsync(text);
+        }
+    }
+
+    public Task OpenFolderAsync(string path, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return Task.CompletedTask;
+        }
+
+        var folder = File.Exists(path) ? Path.GetDirectoryName(path) : path;
+        if (string.IsNullOrWhiteSpace(folder) || !Directory.Exists(folder))
+        {
+            return Task.CompletedTask;
+        }
+
+        Process.Start(new ProcessStartInfo
+        {
+            FileName = folder,
+            UseShellExecute = true
+        });
+        return Task.CompletedTask;
+    }
+
+    public void CloseApplication()
+    {
+        if (Avalonia.Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+        {
+            desktop.Shutdown();
+        }
+    }
+
+    public async Task<SecurityExceptionDialogResult?> ShowSecurityExceptionDialogAsync(string title, string message, CancellationToken cancellationToken = default)
+    {
+        if (Owner is null)
+        {
+            return null;
+        }
+
+        var window = new SecurityExceptionWindow(title, message);
+        return await window.ShowDialog<SecurityExceptionDialogResult?>(Owner);
     }
 }

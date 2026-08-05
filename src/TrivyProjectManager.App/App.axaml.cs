@@ -7,6 +7,8 @@ using Microsoft.Extensions.Logging;
 using TrivyProjectManager.App.Services;
 using TrivyProjectManager.App.ViewModels;
 using TrivyProjectManager.App.Views;
+using TrivyProjectManager.Application.Abstractions;
+using TrivyProjectManager.Application.Services;
 using TrivyProjectManager.Infrastructure;
 using TrivyProjectManager.Infrastructure.Data;
 
@@ -26,6 +28,8 @@ public sealed partial class App : Avalonia.Application
         var services = new ServiceCollection();
         services.AddLogging(builder => builder.AddProvider(new LocalFileLoggerProvider()));
         services.AddTrivyProjectManager();
+        services.AddSingleton<IApplicationUpdateClient, VelopackApplicationUpdateClient>();
+        services.AddSingleton<IApplicationUpdateService, ApplicationUpdateService>();
         services.AddSingleton<IDialogService, DialogService>();
         services.AddTransient<MainWindowViewModel>();
         _services = services.BuildServiceProvider();
@@ -44,6 +48,7 @@ public sealed partial class App : Avalonia.Application
             window.DataContext = viewModel;
             desktop.MainWindow = window;
             viewModel.LoadCommand.Execute(null);
+            viewModel.StartAutomaticApplicationUpdateCheck();
         }
 
         base.OnFrameworkInitializationCompleted();

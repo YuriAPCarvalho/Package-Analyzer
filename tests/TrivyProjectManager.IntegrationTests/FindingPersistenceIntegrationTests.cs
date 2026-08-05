@@ -42,18 +42,37 @@ public sealed class FindingPersistenceIntegrationTests
             VulnerabilityId = "CVE-1",
             PackageName = "Package",
             InstalledVersion = "1.0.0",
+            RecommendedFixedVersion = "1.0.1",
+            Ecosystem = "nuget",
+            CvssScore = 9.8m,
+            CvssVector = "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+            CweIds = "CWE-120",
             Severity = FindingSeverity.High,
-            References = [new FindingReference { Url = "https://example.test/CVE-1" }],
-            Occurrences = [new FindingOccurrence { Target = "target.deps.json", FilePath = "target.deps.json" }]
+            References = [new FindingReference { Url = "https://example.test/CVE-1", DisplayName = "example.test", IsPrimary = true }],
+            Occurrences = [new FindingOccurrence { Target = "target.deps.json", FilePath = "target.deps.json", RelativePath = "target.deps.json", AbsolutePath = Path.Combine(project.Path, "target.deps.json") }]
+        };
+        var enrichment = new VulnerabilityEnrichment
+        {
+            VulnerabilityId = "CVE-1",
+            CvssScore = 9.8m,
+            CweIds = "CWE-120",
+            Source = "NVD"
         };
 
         dbContext.Projects.Add(project);
         dbContext.Scans.Add(scan);
         dbContext.Findings.Add(finding);
+        dbContext.VulnerabilityEnrichments.Add(enrichment);
         await dbContext.SaveChangesAsync();
 
         Assert.Equal(1, await dbContext.Findings.CountAsync());
         Assert.Equal(1, await dbContext.FindingReferences.CountAsync());
         Assert.Equal(1, await dbContext.FindingOccurrences.CountAsync());
+        Assert.Equal(1, await dbContext.VulnerabilityEnrichments.CountAsync());
+        var persisted = await dbContext.Findings.Include(entity => entity.References).Include(entity => entity.Occurrences).SingleAsync();
+        Assert.Equal("1.0.1", persisted.RecommendedFixedVersion);
+        Assert.Equal(9.8m, persisted.CvssScore);
+        Assert.True(persisted.References.Single().IsPrimary);
+        Assert.Equal("target.deps.json", persisted.Occurrences.Single().RelativePath);
     }
 }

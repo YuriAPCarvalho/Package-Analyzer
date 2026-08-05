@@ -97,6 +97,23 @@ dotnet test TrivyProjectManager.sln --no-restore -m:1 -nr:false
 
 Os testes cobrem detecção de projeto, parser do JSON do Trivy, deduplicação, contadores, comparação entre scans, mascaramento de secrets, chave lógica, validação de comandos, migration SQLite, retenção e textos de apresentação em pt-BR.
 
+## Publicação e Atualizações
+
+A distribuição Windows x64 usa Velopack e GitHub Releases públicos em `https://github.com/YuriAPCarvalho/Package-Analyzer`.
+
+Os assets de marca ficam em `src\TrivyProjectManager.App\Assets`: `app-icon.ico` é usado pelo executável, janelas, taskbar e atalhos do Windows; `app-logo.png` é usado no splash da instalação e na interface.
+
+Para publicar uma nova versão:
+
+```powershell
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+O workflow `.github/workflows/release.yml` restaura, compila, testa, publica o app self-contained, empacota com `vpk pack` e envia os artefatos para o GitHub Release. Cada tag `vMAJOR.MINOR.PATCH` precisa ter uma seção correspondente no `CHANGELOG.md`, por exemplo `## [0.1.0]`.
+
+A assinatura digital ainda não está ativa. Quando houver certificado ou Azure Trusted Signing configurado, adicione `--signParams` ou `--azureTrustedSignFile` no passo `Pack Velopack release` do workflow.
+
 ## Limitações Atuais
 
 - A UI é um MVP funcional de janela única, não um wizard multi-passo completo.

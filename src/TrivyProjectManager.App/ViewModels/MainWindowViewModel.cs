@@ -22,8 +22,12 @@ public sealed partial class MainWindowViewModel : ObservableObject
     private readonly IAppSettingsService _settingsService;
     private readonly ITrivyBootstrapService _trivyBootstrapService;
     private readonly IExternalLinkService _externalLinkService;
+    private readonly IApplicationUpdateService _applicationUpdateService;
     private readonly IDialogService _dialogService;
+    private readonly FindingTextService _findingTextService;
+    private readonly UpdateCommandService _updateCommandService;
     private CancellationTokenSource? _scanCancellation;
+    private bool _automaticApplicationUpdateCheckStarted;
     private List<FindingRowViewModel> _allFindings = [];
 
     public MainWindowViewModel(
@@ -34,7 +38,10 @@ public sealed partial class MainWindowViewModel : ObservableObject
         IAppSettingsService settingsService,
         ITrivyBootstrapService trivyBootstrapService,
         IExternalLinkService externalLinkService,
-        IDialogService dialogService)
+        IApplicationUpdateService applicationUpdateService,
+        IDialogService dialogService,
+        FindingTextService findingTextService,
+        UpdateCommandService updateCommandService)
     {
         _dbContext = dbContext;
         _detectionService = detectionService;
@@ -43,7 +50,10 @@ public sealed partial class MainWindowViewModel : ObservableObject
         _settingsService = settingsService;
         _trivyBootstrapService = trivyBootstrapService;
         _externalLinkService = externalLinkService;
+        _applicationUpdateService = applicationUpdateService;
         _dialogService = dialogService;
+        _findingTextService = findingTextService;
+        _updateCommandService = updateCommandService;
     }
 
     public string AppTitle => "Package-Analyzer by: YuriAPCarvalho";
@@ -72,6 +82,14 @@ public sealed partial class MainWindowViewModel : ObservableObject
         DisplayTextService.LifecycleStatus(FindingLifecycleStatus.Resolved),
         DisplayTextService.LifecycleStatus(FindingLifecycleStatus.Regression),
         DisplayTextService.LifecycleStatus(FindingLifecycleStatus.Ignored)
+    ];
+
+    public IReadOnlyList<string> DependencyOptions { get; } =
+    [
+        "Todas",
+        "Direta",
+        "Transitiva",
+        "Não informada"
     ];
     public IReadOnlyList<ProjectTechnology> TechnologyOptions { get; } = Enum.GetValues<ProjectTechnology>();
     public IReadOnlyList<PackageManagerType> PackageManagerOptions { get; } = Enum.GetValues<PackageManagerType>();
@@ -117,6 +135,24 @@ public sealed partial class MainWindowViewModel : ObservableObject
         set => SetProperty(ref _progressText, value);
     }
 
+    public string ApplicationInstalledVersion => _applicationUpdateService.InstalledVersion;
+
+    private string _applicationUpdateStatusText = "Aguardando";
+    public string ApplicationUpdateStatusText
+    {
+        get => _applicationUpdateStatusText;
+        set => SetProperty(ref _applicationUpdateStatusText, value);
+    }
+
+    private string _lastApplicationUpdateCheckText = "Nunca";
+    public string LastApplicationUpdateCheckText
+    {
+        get => _lastApplicationUpdateCheckText;
+        set => SetProperty(ref _lastApplicationUpdateCheckText, value);
+    }
+
+    public string ApplicationUpdateChannelText => "Stable";
+
     private bool _isScanRunning;
     public bool IsScanRunning
     {
@@ -133,6 +169,22 @@ public sealed partial class MainWindowViewModel : ObservableObject
     }
 
     public bool CanRunScan => HasSelectedProject && !IsScanRunning;
+
+    private bool _isApplicationUpdateRunning;
+    public bool IsApplicationUpdateRunning
+    {
+        get => _isApplicationUpdateRunning;
+        set
+        {
+            if (SetProperty(ref _isApplicationUpdateRunning, value))
+            {
+                OnPropertyChanged(nameof(CanCheckApplicationUpdate));
+                CheckApplicationUpdateCommand.NotifyCanExecuteChanged();
+            }
+        }
+    }
+
+    public bool CanCheckApplicationUpdate => !IsApplicationUpdateRunning;
 
     private AppSettings _settings = new();
     public AppSettings Settings
@@ -206,6 +258,32 @@ public sealed partial class MainWindowViewModel : ObservableObject
         }
     }
 
+    private string _searchFilter = string.Empty;
+    public string SearchFilter
+    {
+        get => _searchFilter;
+        set
+        {
+            if (SetProperty(ref _searchFilter, value))
+            {
+                ApplyFilters();
+            }
+        }
+    }
+
+    private string _selectedDependency = "Todas";
+    public string SelectedDependency
+    {
+        get => _selectedDependency;
+        set
+        {
+            if (SetProperty(ref _selectedDependency, value))
+            {
+                ApplyFilters();
+            }
+        }
+    }
+
     private bool _onlyWithFix;
     public bool OnlyWithFix
     {
@@ -231,6 +309,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
     public int NewCount => SelectedProject?.LastSucceededScan?.NewCount ?? 0;
     public int ResolvedCount => SelectedProject?.LastSucceededScan?.ResolvedCount ?? 0;
     public int RegressionCount => SelectedProject?.LastSucceededScan?.RegressionCount ?? 0;
+    public int IgnoredCount => _allFindings.Count(finding => finding.StatusValue == FindingLifecycleStatus.Ignored);
     public bool HasFindings => Findings.Count > 0;
     public bool HasNoFindings => !HasFindings;
     public bool HasMisconfigurationFindings => MisconfigurationFindings.Count > 0;
@@ -244,8 +323,50 @@ public sealed partial class MainWindowViewModel : ObservableObject
     private async Task LoadAsync()
     {
         Settings = await _settingsService.LoadAsync();
+        RefreshApplicationUpdateStatus();
         await EnsureTrivyAvailableAsync();
         await ReloadProjectsAsync(selectFirstWhenMissing: true);
+    }
+
+    public void StartAutomaticApplicationUpdateCheck()
+    {
+        if (_automaticApplicationUpdateCheckStarted)
+        {
+            return;
+        }
+
+        _automaticApplicationUpdateCheckStarted = true;
+        _ = CheckApplicationUpdateOnStartupAsync();
+    }
+
+    private async Task CheckApplicationUpdateOnStartupAsync()
+    {
+        try
+        {
+            await Task.Delay(TimeSpan.FromSeconds(4));
+            var completion = new TaskCompletionSource();
+            Dispatcher.UIThread.Post(async () =>
+            {
+                try
+                {
+                    await RunApplicationUpdateCheckAsync(showNoUpdateMessage: false);
+                    completion.SetResult();
+                }
+                catch (Exception ex)
+                {
+                    completion.SetException(ex);
+                }
+            });
+            await completion.Task;
+        }
+        catch (Exception ex)
+        {
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                ApplicationUpdateStatusText = DisplayTextService.ApplicationUpdateStatus(ApplicationUpdateStatus.Failed);
+                ProgressText = $"Não foi possível verificar atualização da aplicação: {ex.Message}";
+            });
+        }
     }
 
     private async Task EnsureTrivyAvailableAsync()
@@ -345,6 +466,101 @@ public sealed partial class MainWindowViewModel : ObservableObject
         await _dialogService.ShowMessageAsync("Configurações", "Configurações salvas.");
     }
 
+    [RelayCommand(CanExecute = nameof(CanCheckApplicationUpdate))]
+    private Task CheckApplicationUpdateAsync()
+    {
+        return RunApplicationUpdateCheckAsync(showNoUpdateMessage: true);
+    }
+
+    private async Task RunApplicationUpdateCheckAsync(bool showNoUpdateMessage)
+    {
+        if (IsApplicationUpdateRunning)
+        {
+            return;
+        }
+
+        IsApplicationUpdateRunning = true;
+        ApplicationUpdateStatusText = DisplayTextService.ApplicationUpdateStatus(ApplicationUpdateStatus.Checking);
+        try
+        {
+            var result = await _applicationUpdateService.CheckForUpdatesAsync(Settings);
+            ApplyApplicationUpdateResult(result);
+
+            if (result.Status == ApplicationUpdateStatus.UpdateAvailable)
+            {
+                await EnforceApplicationUpdateAsync(result);
+                return;
+            }
+
+            if (showNoUpdateMessage && result.Status == ApplicationUpdateStatus.UpToDate)
+            {
+                await _dialogService.ShowMessageAsync("Atualizações", "A aplicação já está na versão mais recente.");
+            }
+            else if (showNoUpdateMessage && result.Status is ApplicationUpdateStatus.Failed or ApplicationUpdateStatus.NotInstalled)
+            {
+                await _dialogService.ShowMessageAsync("Atualizações", result.Message);
+            }
+        }
+        finally
+        {
+            IsApplicationUpdateRunning = false;
+        }
+    }
+
+    private async Task EnforceApplicationUpdateAsync(ApplicationUpdateResult update)
+    {
+        while (true)
+        {
+            var shouldUpdate = await _dialogService.ShowMandatoryUpdateAsync(update);
+            if (!shouldUpdate)
+            {
+                _dialogService.CloseApplication();
+                return;
+            }
+
+            var progress = new Progress<int>(percentage =>
+                Dispatcher.UIThread.Post(() =>
+                {
+                    ApplicationUpdateStatusText = $"Baixando {percentage}%";
+                    ProgressText = $"Baixando atualização {percentage}%";
+                }));
+            var result = await _applicationUpdateService.DownloadAndApplyAsync(Settings, update, progress);
+            ApplyApplicationUpdateResult(result);
+
+            if (result.Status == ApplicationUpdateStatus.Applying)
+            {
+                return;
+            }
+
+            await _dialogService.ShowMessageAsync(
+                "Atualização obrigatória",
+                $"{result.Message}\n\nTente novamente ou feche a aplicação.");
+        }
+    }
+
+    private void ApplyApplicationUpdateResult(ApplicationUpdateResult result)
+    {
+        ApplicationUpdateStatusText = DisplayTextService.ApplicationUpdateStatus(result.Status);
+        LastApplicationUpdateCheckText = FormatLastUpdateCheck(result.CheckedAtUtc);
+        OnPropertyChanged(nameof(ApplicationInstalledVersion));
+    }
+
+    private void RefreshApplicationUpdateStatus()
+    {
+        ApplicationUpdateStatusText = Enum.TryParse<ApplicationUpdateStatus>(Settings.LastApplicationUpdateStatus, out var status)
+            ? DisplayTextService.ApplicationUpdateStatus(status)
+            : Settings.LastApplicationUpdateStatus;
+        LastApplicationUpdateCheckText = Settings.LastApplicationUpdateCheckUtc.HasValue
+            ? FormatLastUpdateCheck(Settings.LastApplicationUpdateCheckUtc.Value)
+            : "Nunca";
+        OnPropertyChanged(nameof(ApplicationInstalledVersion));
+    }
+
+    private static string FormatLastUpdateCheck(DateTimeOffset value)
+    {
+        return value.ToLocalTime().ToString("g");
+    }
+
     [RelayCommand]
     private async Task SaveProjectSettingsAsync()
     {
@@ -402,6 +618,86 @@ public sealed partial class MainWindowViewModel : ObservableObject
         {
             await _externalLinkService.OpenAsync(finding.PrimaryUrl);
         }
+    }
+
+    [RelayCommand]
+    private async Task OpenReferenceAsync(string url)
+    {
+        if (!string.IsNullOrWhiteSpace(url))
+        {
+            await _externalLinkService.OpenAsync(url);
+        }
+    }
+
+    [RelayCommand]
+    private async Task CopyTextAsync(string text)
+    {
+        if (!string.IsNullOrWhiteSpace(text))
+        {
+            await _dialogService.CopyToClipboardAsync(text);
+        }
+    }
+
+    [RelayCommand]
+    private Task CopyCveAsync(FindingRowViewModel finding)
+    {
+        return CopyTextAsync(finding.Vulnerability);
+    }
+
+    [RelayCommand]
+    private Task CopyDetailsAsync(FindingRowViewModel finding)
+    {
+        return CopyTextAsync(finding.CopyDetailsText);
+    }
+
+    [RelayCommand]
+    private Task CopyUpdateCommandAsync(FindingRowViewModel finding)
+    {
+        return CopyTextAsync(finding.UpdateCommand);
+    }
+
+    [RelayCommand]
+    private Task CopyPathAsync(FindingOccurrenceViewModel occurrence)
+    {
+        return CopyTextAsync(occurrence.AbsolutePath);
+    }
+
+    [RelayCommand]
+    private Task OpenFolderAsync(FindingOccurrenceViewModel occurrence)
+    {
+        return _dialogService.OpenFolderAsync(occurrence.AbsolutePath);
+    }
+
+    [RelayCommand]
+    private async Task CreateExceptionAsync(FindingRowViewModel finding)
+    {
+        if (SelectedProject is null)
+        {
+            return;
+        }
+
+        var result = await _dialogService.ShowSecurityExceptionDialogAsync(
+            "Criar exceção",
+            $"{finding.Package} - {finding.Vulnerability}");
+        if (result is null)
+        {
+            return;
+        }
+
+        _dbContext.SecurityExceptions.Add(new Domain.Entities.SecurityException
+        {
+            ProjectId = SelectedProject.Id,
+            FindingKey = finding.Finding.FindingKey,
+            VulnerabilityId = finding.Finding.VulnerabilityId,
+            PackageName = finding.Finding.PackageName,
+            InstalledVersion = finding.Finding.InstalledVersion,
+            Reason = result.Reason,
+            ExpiresAt = result.ExpiresAt
+        });
+        await _dbContext.SaveChangesAsync();
+        finding.Finding.Status = FindingLifecycleStatus.Ignored;
+        OnPropertyChanged(nameof(IgnoredCount));
+        ApplyFilters();
     }
 
     private async Task RunScanAsync(ScanMode mode)
@@ -510,7 +806,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
             .OrderByDescending(f => f.Severity)
             .ThenBy(f => f.PackageName)
             .ToListAsync();
-        _allFindings = findings.Select(finding => new FindingRowViewModel(finding)).ToList();
+        _allFindings = findings.Select(finding => new FindingRowViewModel(finding, project, _findingTextService, _updateCommandService)).ToList();
         ApplyFilters();
         NotifyCountersChanged();
     }
@@ -519,13 +815,22 @@ public sealed partial class MainWindowViewModel : ObservableObject
     {
         var selectedSeverity = TryGetSeverityFilter(SelectedSeverity);
         var selectedStatus = TryGetStatusFilter(SelectedStatus);
+        var selectedDependency = TryGetDependencyFilter(SelectedDependency);
         var filtered = _allFindings.Where(finding =>
             (selectedSeverity is null || finding.SeverityValue == selectedSeverity)
             && (selectedStatus is null || finding.StatusValue == selectedStatus)
+            && (selectedDependency is null || finding.DependencyRelationValue == selectedDependency)
             && (string.IsNullOrWhiteSpace(PackageFilter) || finding.Package.Contains(PackageFilter, StringComparison.OrdinalIgnoreCase))
             && (string.IsNullOrWhiteSpace(IdFilter) || finding.Vulnerability.Contains(IdFilter, StringComparison.OrdinalIgnoreCase))
-            && (string.IsNullOrWhiteSpace(TargetFilter) || finding.Target.Contains(TargetFilter, StringComparison.OrdinalIgnoreCase))
-            && (!OnlyWithFix || finding.HasFix));
+            && (string.IsNullOrWhiteSpace(TargetFilter) || finding.OccurrenceList.Any(occurrence =>
+                occurrence.ProjectName.Contains(TargetFilter, StringComparison.OrdinalIgnoreCase)
+                || occurrence.RelativePath.Contains(TargetFilter, StringComparison.OrdinalIgnoreCase)
+                || occurrence.AbsolutePath.Contains(TargetFilter, StringComparison.OrdinalIgnoreCase)))
+            && (string.IsNullOrWhiteSpace(SearchFilter) || finding.SearchText.Contains(SearchFilter, StringComparison.OrdinalIgnoreCase))
+            && (!OnlyWithFix || finding.HasFix))
+            .OrderBy(finding => VulnerabilitySortBucket(finding))
+            .ThenBy(finding => finding.Package)
+            .ThenBy(finding => finding.Vulnerability);
 
         Findings.Clear();
         foreach (var finding in filtered)
@@ -562,6 +867,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
         OnPropertyChanged(nameof(NewCount));
         OnPropertyChanged(nameof(ResolvedCount));
         OnPropertyChanged(nameof(RegressionCount));
+        OnPropertyChanged(nameof(IgnoredCount));
     }
 
     private void NotifyCollectionStateChanged()
@@ -600,5 +906,29 @@ public sealed partial class MainWindowViewModel : ObservableObject
         }
 
         return null;
+    }
+
+    private static DependencyRelation? TryGetDependencyFilter(string value)
+    {
+        return value switch
+        {
+            "Direta" => DependencyRelation.Direct,
+            "Transitiva" => DependencyRelation.Transitive,
+            "Não informada" => DependencyRelation.Unknown,
+            _ => null
+        };
+    }
+
+    private static int VulnerabilitySortBucket(FindingRowViewModel finding)
+    {
+        var fixOffset = finding.HasFix ? 0 : 1;
+        return finding.SeverityValue switch
+        {
+            FindingSeverity.Critical => fixOffset,
+            FindingSeverity.High => 2 + fixOffset,
+            FindingSeverity.Medium => 4,
+            FindingSeverity.Low => 5,
+            _ => 6
+        };
     }
 }

@@ -1,4 +1,6 @@
+using TrivyProjectManager.Application.DTOs;
 using TrivyProjectManager.Domain.Enums;
+using UpdateStatus = TrivyProjectManager.Application.DTOs.ApplicationUpdateStatus;
 
 namespace TrivyProjectManager.Application.Services;
 
@@ -42,5 +44,18 @@ public static class DisplayTextService
         Domain.Enums.FindingType.Secret => "Segredo",
         Domain.Enums.FindingType.License => "Licença",
         _ => type.ToString()
+    };
+
+    public static string ApplicationUpdateStatus(ApplicationUpdateStatus status) => status switch
+    {
+        UpdateStatus.Idle => "Aguardando",
+        UpdateStatus.Checking => "Verificando",
+        UpdateStatus.UpToDate => "Atualizado",
+        UpdateStatus.UpdateAvailable => "Atualização disponível",
+        UpdateStatus.Downloading => "Baixando",
+        UpdateStatus.Applying => "Aplicando",
+        UpdateStatus.Failed => "Falhou",
+        UpdateStatus.NotInstalled => "Não instalado via Velopack",
+        _ => status.ToString()
     };
 }

@@ -21,8 +21,13 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddSingleton<ISecretMaskingService, SecretMaskingService>();
         services.AddSingleton<IFindingDeduplicationService, FindingDeduplicationService>();
         services.AddSingleton<IScanComparisonService, ScanComparisonService>();
+        services.AddSingleton<FixedVersionRecommendationService>();
+        services.AddSingleton<ReferenceDisplayService>();
+        services.AddSingleton<FindingTextService>();
+        services.AddSingleton<UpdateCommandService>();
         services.AddSingleton<TrivyReportRedactionService>();
-        services.AddSingleton<IVulnerabilityEnrichmentService, NullVulnerabilityEnrichmentService>();
+        services.AddScoped<IDependencyAnalysisService, DependencyAnalysisService>();
+        services.AddScoped<IVulnerabilityEnrichmentService, CachedVulnerabilityEnrichmentService>();
         services.AddScoped<ITrivyReportParser, TrivyReportParser>();
         services.AddScoped<ITrivyService, TrivyService>();
         services.AddScoped<IRetentionService, RetentionService>();

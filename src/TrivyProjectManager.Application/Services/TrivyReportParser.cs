@@ -7,7 +7,11 @@ using TrivyProjectManager.Domain.ValueObjects;
 
 namespace TrivyProjectManager.Application.Services;
 
-public sealed class TrivyReportParser(ISecretMaskingService secretMaskingService, IFindingDeduplicationService deduplicationService) : ITrivyReportParser
+public sealed class TrivyReportParser(
+    ISecretMaskingService secretMaskingService,
+    IFindingDeduplicationService deduplicationService,
+    FixedVersionRecommendationService fixedVersionRecommendationService,
+    ReferenceDisplayService referenceDisplayService) : ITrivyReportParser
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -38,10 +42,13 @@ public sealed class TrivyReportParser(ISecretMaskingService secretMaskingService
         return deduplicationService.Deduplicate(findings);
     }
 
-    private static void AddVulnerabilities(List<Finding> findings, TrivyResultDto result)
+    private void AddVulnerabilities(List<Finding> findings, TrivyResultDto result)
     {
         foreach (var vulnerability in result.Vulnerabilities ?? [])
         {
+            var recommendation = fixedVersionRecommendationService.Recommend(vulnerability.InstalledVersion, vulnerability.FixedVersion);
+            var references = referenceDisplayService.Build(vulnerability.References ?? [], vulnerability.PrimaryUrl);
+            var cvss = SelectCvss(vulnerability);
             var finding = new Finding
             {
                 FindingType = FindingType.Vulnerability,
@@ -49,23 +56,38 @@ public sealed class TrivyReportParser(ISecretMaskingService secretMaskingService
                 VulnerabilityId = vulnerability.VulnerabilityId,
                 PackageName = vulnerability.PackageName,
                 PackagePath = vulnerability.PackagePath,
+                Ecosystem = result.Type,
                 InstalledVersion = vulnerability.InstalledVersion,
                 FixedVersion = vulnerability.FixedVersion,
+                RecommendedFixedVersion = recommendation.RecommendedVersion,
+                OtherFixedVersions = recommendation.OtherVersions.Count == 0 ? null : string.Join(", ", recommendation.OtherVersions),
                 Severity = ParseSeverity(vulnerability.Severity),
+                SeveritySource = vulnerability.SeveritySource,
+                FixAvailability = ClassifyFixAvailability(vulnerability.FixedVersion, vulnerability.Status),
                 Title = vulnerability.Title,
                 Description = vulnerability.Description,
-                PrimaryUrl = vulnerability.PrimaryUrl ?? vulnerability.References?.FirstOrDefault(),
+                PrimaryUrl = referenceDisplayService.SelectPrimaryUrl(references),
+                CvssScore = cvss.Score,
+                CvssVector = cvss.Vector,
+                CvssSource = cvss.Source,
+                CweIds = vulnerability.CweIds is null || vulnerability.CweIds.Count == 0 ? null : string.Join(", ", vulnerability.CweIds.Distinct(StringComparer.OrdinalIgnoreCase)),
                 PublishedDate = vulnerability.PublishedDate,
                 LastModifiedDate = vulnerability.LastModifiedDate
             };
             finding.FindingKey = FindingKey.Create(finding.FindingType, finding.VulnerabilityId, finding.PackageName, finding.InstalledVersion, result.Target, finding.Title);
-            finding.References.AddRange((vulnerability.References ?? []).Where(IsHttpUrl).Distinct(StringComparer.OrdinalIgnoreCase).Select(url => new FindingReference { Url = url }));
-            finding.Occurrences.Add(new FindingOccurrence { Target = result.Target, FilePath = vulnerability.PackagePath, ProjectName = result.Target });
+            finding.References.AddRange(references);
+            finding.Occurrences.Add(new FindingOccurrence
+            {
+                Target = result.Target,
+                FilePath = result.Target,
+                RelativePath = result.Target,
+                ProjectName = result.Target
+            });
             findings.Add(finding);
         }
     }
 
-    private static void AddMisconfigurations(List<Finding> findings, TrivyResultDto result)
+    private void AddMisconfigurations(List<Finding> findings, TrivyResultDto result)
     {
         foreach (var misconfiguration in result.Misconfigurations ?? [])
         {
@@ -82,14 +104,15 @@ public sealed class TrivyReportParser(ISecretMaskingService secretMaskingService
                 Severity = ParseSeverity(misconfiguration.Severity),
                 Title = misconfiguration.Title ?? misconfiguration.Message,
                 Description = misconfiguration.Description,
-                PrimaryUrl = misconfiguration.PrimaryUrl ?? misconfiguration.References?.FirstOrDefault(),
                 FilePath = result.Target,
                 StartLine = misconfiguration.CauseMetadata?.StartLine,
                 MaskedCodeSnippet = snippet
             };
             finding.FindingKey = FindingKey.Create(finding.FindingType, finding.VulnerabilityId, finding.PackageName, finding.InstalledVersion, result.Target, finding.Title);
-            finding.References.AddRange((misconfiguration.References ?? []).Where(IsHttpUrl).Distinct(StringComparer.OrdinalIgnoreCase).Select(url => new FindingReference { Url = url }));
-            finding.Occurrences.Add(new FindingOccurrence { Target = result.Target, FilePath = result.Target, ProjectName = result.Target });
+            var references = referenceDisplayService.Build(misconfiguration.References ?? [], misconfiguration.PrimaryUrl);
+            finding.PrimaryUrl = referenceDisplayService.SelectPrimaryUrl(references);
+            finding.References.AddRange(references);
+            finding.Occurrences.Add(new FindingOccurrence { Target = result.Target, FilePath = result.Target, RelativePath = result.Target, ProjectName = result.Target });
             findings.Add(finding);
         }
     }
@@ -112,9 +135,50 @@ public sealed class TrivyReportParser(ISecretMaskingService secretMaskingService
                 MaskedCodeSnippet = secretMaskingService.Mask(snippet)
             };
             finding.FindingKey = FindingKey.Create(finding.FindingType, finding.VulnerabilityId, finding.PackageName, null, result.Target, finding.Title);
-            finding.Occurrences.Add(new FindingOccurrence { Target = result.Target, FilePath = result.Target, ProjectName = result.Target });
+            finding.Occurrences.Add(new FindingOccurrence { Target = result.Target, FilePath = result.Target, RelativePath = result.Target, ProjectName = result.Target });
             findings.Add(finding);
         }
+    }
+
+    private static FixAvailability ClassifyFixAvailability(string? fixedVersion, string? status)
+    {
+        if (!string.IsNullOrWhiteSpace(fixedVersion))
+        {
+            return FixAvailability.Available;
+        }
+
+        if (string.IsNullOrWhiteSpace(status))
+        {
+            return FixAvailability.NotInformed;
+        }
+
+        return status.Contains("will_not_fix", StringComparison.OrdinalIgnoreCase)
+            || status.Contains("not fixed", StringComparison.OrdinalIgnoreCase)
+            || status.Contains("unfixed", StringComparison.OrdinalIgnoreCase)
+            ? FixAvailability.Unavailable
+            : FixAvailability.NotInformed;
+    }
+
+    private static (decimal? Score, string? Vector, string? Source) SelectCvss(TrivyVulnerabilityDto vulnerability)
+    {
+        if (vulnerability.Cvss is null || vulnerability.Cvss.Count == 0)
+        {
+            return (null, null, null);
+        }
+
+        var preferred = vulnerability.Cvss
+            .OrderByDescending(pair => pair.Value.V40Score.HasValue)
+            .ThenByDescending(pair => pair.Value.V3Score.HasValue)
+            .ThenByDescending(pair => pair.Value.V2Score.HasValue)
+            .ThenByDescending(pair => pair.Value.V40Score ?? pair.Value.V3Score ?? pair.Value.V2Score ?? 0)
+            .First();
+
+        var value = preferred.Value;
+        return value.V40Score.HasValue
+            ? (value.V40Score, value.V40Vector, preferred.Key)
+            : value.V3Score.HasValue
+                ? (value.V3Score, value.V3Vector, preferred.Key)
+                : (value.V2Score, value.V2Vector, preferred.Key);
     }
 
     private static FindingSeverity ParseSeverity(string? severity)
@@ -124,9 +188,4 @@ public sealed class TrivyReportParser(ISecretMaskingService secretMaskingService
             : FindingSeverity.Unknown;
     }
 
-    private static bool IsHttpUrl(string url)
-    {
-        return Uri.TryCreate(url, UriKind.Absolute, out var uri)
-            && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
-    }
 }

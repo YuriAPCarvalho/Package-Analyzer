@@ -13,6 +13,7 @@ public sealed class TrivyProjectManagerDbContext(DbContextOptions<TrivyProjectMa
     public DbSet<FindingReference> FindingReferences => Set<FindingReference>();
     public DbSet<FindingOccurrence> FindingOccurrences => Set<FindingOccurrence>();
     public DbSet<SecurityExceptionEntity> SecurityExceptions => Set<SecurityExceptionEntity>();
+    public DbSet<VulnerabilityEnrichment> VulnerabilityEnrichments => Set<VulnerabilityEnrichment>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -58,9 +59,18 @@ public sealed class TrivyProjectManagerDbContext(DbContextOptions<TrivyProjectMa
             entity.Property(e => e.VulnerabilityId).HasMaxLength(120);
             entity.Property(e => e.PackageName).HasMaxLength(300);
             entity.Property(e => e.PackagePath).HasMaxLength(1024);
+            entity.Property(e => e.Ecosystem).HasMaxLength(80);
             entity.Property(e => e.InstalledVersion).HasMaxLength(160);
             entity.Property(e => e.FixedVersion).HasMaxLength(300);
+            entity.Property(e => e.RecommendedFixedVersion).HasMaxLength(160);
+            entity.Property(e => e.OtherFixedVersions).HasMaxLength(300);
+            entity.Property(e => e.SeveritySource).HasMaxLength(120);
             entity.Property(e => e.PrimaryUrl).HasMaxLength(1024);
+            entity.Property(e => e.CvssVector).HasMaxLength(260);
+            entity.Property(e => e.CvssSource).HasMaxLength(120);
+            entity.Property(e => e.CweIds).HasMaxLength(300);
+            entity.Property(e => e.EnrichmentSource).HasMaxLength(120);
+            entity.Property(e => e.RuntimeSupportAlert).HasMaxLength(1000);
             entity.Property(e => e.FilePath).HasMaxLength(1024);
             entity.HasIndex(e => e.ScanId);
             entity.HasIndex(e => e.VulnerabilityId);
@@ -76,6 +86,7 @@ public sealed class TrivyProjectManagerDbContext(DbContextOptions<TrivyProjectMa
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).ValueGeneratedNever();
             entity.Property(e => e.Url).HasMaxLength(1024).IsRequired();
+            entity.Property(e => e.DisplayName).HasMaxLength(240);
             entity.HasIndex(e => e.FindingId);
         });
 
@@ -85,6 +96,9 @@ public sealed class TrivyProjectManagerDbContext(DbContextOptions<TrivyProjectMa
             entity.Property(e => e.Id).ValueGeneratedNever();
             entity.Property(e => e.Target).HasMaxLength(1024);
             entity.Property(e => e.FilePath).HasMaxLength(1024);
+            entity.Property(e => e.RelativePath).HasMaxLength(1024);
+            entity.Property(e => e.AbsolutePath).HasMaxLength(1024);
+            entity.Property(e => e.ProjectFilePath).HasMaxLength(1024);
             entity.Property(e => e.ProjectName).HasMaxLength(300);
             entity.HasIndex(e => e.FindingId);
         });
@@ -93,11 +107,25 @@ public sealed class TrivyProjectManagerDbContext(DbContextOptions<TrivyProjectMa
         {
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.FindingKey).HasMaxLength(512);
             entity.Property(e => e.VulnerabilityId).HasMaxLength(120);
             entity.Property(e => e.PackageName).HasMaxLength(300);
+            entity.Property(e => e.InstalledVersion).HasMaxLength(160);
             entity.Property(e => e.Reason).HasMaxLength(1000);
             entity.Property(e => e.CreatedBy).HasMaxLength(160);
             entity.HasIndex(e => e.ProjectId);
+            entity.HasIndex(e => e.FindingKey);
+        });
+
+        modelBuilder.Entity<VulnerabilityEnrichment>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.VulnerabilityId).HasMaxLength(120).IsRequired();
+            entity.Property(e => e.CvssVector).HasMaxLength(260);
+            entity.Property(e => e.CweIds).HasMaxLength(300);
+            entity.Property(e => e.Source).HasMaxLength(120).IsRequired();
+            entity.HasIndex(e => e.VulnerabilityId).IsUnique();
         });
     }
 }
