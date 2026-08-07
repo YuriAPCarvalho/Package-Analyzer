@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Controls;
 using Avalonia.Input.Platform;
@@ -68,6 +69,42 @@ public sealed class DialogService : IDialogService
         {
             await Owner.Clipboard.SetTextAsync(text);
         }
+    }
+
+    public async Task SaveTextFileAsync(string suggestedFileName, string content, CancellationToken cancellationToken = default)
+    {
+        if (Owner?.StorageProvider is null)
+        {
+            return;
+        }
+
+        var file = await Owner.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+        {
+            Title = "Salvar relatório em TXT",
+            SuggestedFileName = suggestedFileName,
+            DefaultExtension = "txt",
+            FileTypeChoices =
+            [
+                new FilePickerFileType("Arquivo de texto")
+                {
+                    Patterns = ["*.txt"],
+                    MimeTypes = ["text/plain"]
+                }
+            ]
+        });
+        if (file is null)
+        {
+            return;
+        }
+
+        await using var stream = await file.OpenWriteAsync();
+        if (stream.CanSeek)
+        {
+            stream.SetLength(0);
+        }
+
+        await using var writer = new StreamWriter(stream, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+        await writer.WriteAsync(content.AsMemory(), cancellationToken);
     }
 
     public Task OpenFolderAsync(string path, CancellationToken cancellationToken = default)

@@ -8,6 +8,17 @@
         MinWidth="960"
         MinHeight="640"
         Background="#000000">
+  <Window.Styles>
+    <Style Selector="TextBlock.log-line.info">
+      <Setter Property="Foreground" Value="#107C10" />
+    </Style>
+    <Style Selector="TextBlock.log-line.warning">
+      <Setter Property="Foreground" Value="#F7630C" />
+    </Style>
+    <Style Selector="TextBlock.log-line.error">
+      <Setter Property="Foreground" Value="#D13438" />
+    </Style>
+  </Window.Styles>
   <Grid ColumnDefinitions="300,*" Background="#000000">
     <Border Padding="16" Background="#070A0F">
       <Grid RowDefinitions="Auto,Auto,*">
@@ -228,10 +239,16 @@
 
         <TabItem Header="Configurações incorretas">
           <Grid RowDefinitions="Auto,*" Margin="0,8,0,0">
-            <StackPanel Spacing="3">
-              <TextBlock Text="Configurações incorretas" FontSize="20" FontWeight="SemiBold" />
-              <TextBlock Text="Mostra falhas de configuração detectadas pelo Trivy em arquivos como Dockerfile, manifests e infraestrutura como código." Opacity="0.74" TextWrapping="Wrap" />
-            </StackPanel>
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+              <StackPanel Spacing="3">
+                <TextBlock Text="Configurações incorretas" FontSize="20" FontWeight="SemiBold" />
+                <TextBlock Text="Mostra falhas de configuração detectadas pelo Trivy em arquivos como Dockerfile, manifests e infraestrutura como código." Opacity="0.74" TextWrapping="Wrap" />
+              </StackPanel>
+              <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                <Button Content="Copiar relatório" Command="{Binding CopyMisconfigurationReportCommand}" />
+                <Button Content="Baixar TXT" Command="{Binding DownloadMisconfigurationReportCommand}" />
+              </StackPanel>
+            </Grid>
             <Grid Grid.Row="1" Margin="0,12,0,0">
               <TextBlock Text="Nenhuma configuração incorreta encontrada no último scan." IsVisible="{Binding HasNoMisconfigurationFindings}" Opacity="0.72" />
               <ScrollViewer IsVisible="{Binding HasMisconfigurationFindings}">
@@ -260,10 +277,16 @@
 
         <TabItem Header="Segredos">
           <Grid RowDefinitions="Auto,*" Margin="0,8,0,0">
-            <StackPanel Spacing="3">
-              <TextBlock Text="Segredos" FontSize="20" FontWeight="SemiBold" />
-              <TextBlock Text="Apresenta possíveis tokens, chaves e credenciais detectados. O conteúdo sensível é sempre mascarado antes de aparecer ou ser persistido." Opacity="0.74" TextWrapping="Wrap" />
-            </StackPanel>
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+              <StackPanel Spacing="3">
+                <TextBlock Text="Segredos" FontSize="20" FontWeight="SemiBold" />
+                <TextBlock Text="Apresenta possíveis tokens, chaves e credenciais detectados. O conteúdo sensível é sempre mascarado antes de aparecer ou ser persistido." Opacity="0.74" TextWrapping="Wrap" />
+              </StackPanel>
+              <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                <Button Content="Copiar relatório" Command="{Binding CopySecretReportCommand}" />
+                <Button Content="Baixar TXT" Command="{Binding DownloadSecretReportCommand}" />
+              </StackPanel>
+            </Grid>
             <Grid Grid.Row="1" Margin="0,12,0,0">
               <TextBlock Text="Nenhum segredo encontrado no último scan." IsVisible="{Binding HasNoSecretFindings}" Opacity="0.72" />
               <ScrollViewer IsVisible="{Binding HasSecretFindings}">
@@ -418,15 +441,27 @@
 
         <TabItem Header="Logs">
           <Grid RowDefinitions="Auto,*" Margin="0,8,0,0">
-            <StackPanel Spacing="3">
-              <TextBlock Text="Logs" FontSize="20" FontWeight="SemiBold" />
-              <TextBlock Text="Mostra a saída em tempo real dos comandos e do Trivy durante a execução do scan." Opacity="0.74" TextWrapping="Wrap" />
-            </StackPanel>
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+              <StackPanel Spacing="3">
+                <TextBlock Text="Logs" FontSize="20" FontWeight="SemiBold" />
+                <TextBlock Text="Mostra a saída em tempo real dos comandos e do Trivy durante a execução do scan." Opacity="0.74" TextWrapping="Wrap" />
+              </StackPanel>
+              <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                <Button Content="Copiar logs" Command="{Binding CopyLogsCommand}" />
+                <Button Content="Baixar TXT" Command="{Binding DownloadLogsCommand}" />
+              </StackPanel>
+            </Grid>
             <ScrollViewer Grid.Row="1" Margin="0,12,0,0">
               <ItemsControl ItemsSource="{Binding Logs}">
                 <ItemsControl.ItemTemplate>
                   <DataTemplate>
-                    <TextBlock Text="{Binding}" FontFamily="Consolas" TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding FormattedText}"
+                               FontFamily="Consolas"
+                               TextWrapping="Wrap"
+                               Classes="log-line"
+                               Classes.info="{Binding IsInfo}"
+                               Classes.warning="{Binding IsWarning}"
+                               Classes.error="{Binding IsError}" />
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>
               </ItemsControl>

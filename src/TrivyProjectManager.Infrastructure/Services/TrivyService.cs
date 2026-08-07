@@ -70,6 +70,12 @@ public sealed class TrivyService(IProcessRunner processRunner, IStoragePathServi
             arguments.Add(skipDirectory);
         }
 
+        foreach (var filePattern in options.FilePatterns.Where(value => !string.IsNullOrWhiteSpace(value)))
+        {
+            arguments.Add("--file-patterns");
+            arguments.Add(filePattern);
+        }
+
         return processRunner.RunAsync(new ProcessRequest(executable, arguments, projectPath, options.Timeout), progress, cancellationToken);
     }
 }

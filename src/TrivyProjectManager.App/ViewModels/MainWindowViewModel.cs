@@ -29,6 +29,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
     private CancellationTokenSource? _scanCancellation;
     private bool _automaticApplicationUpdateCheckStarted;
     private List<FindingRowViewModel> _allFindings = [];
+    private string? _logProjectName;
 
     public MainWindowViewModel(
         TrivyProjectManagerDbContext dbContext,
@@ -62,7 +63,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
     public ObservableCollection<FindingRowViewModel> MisconfigurationFindings { get; } = [];
     public ObservableCollection<FindingRowViewModel> SecretFindings { get; } = [];
     public ObservableCollection<ScanRowViewModel> Scans { get; } = [];
-    public ObservableCollection<string> Logs { get; } = [];
+    public ObservableCollection<LogEntryViewModel> Logs { get; } = [];
     public ObservableCollection<ProjectCommand> Commands { get; } = [];
     public IReadOnlyList<string> SeverityOptions { get; } =
     [
@@ -370,6 +371,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
     public bool HasNoMisconfigurationFindings => !HasMisconfigurationFindings;
     public bool HasSecretFindings => SecretFindings.Count > 0;
     public bool HasNoSecretFindings => !HasSecretFindings;
+    public bool HasLogs => Logs.Count > 0;
     public bool HasScans => Scans.Count > 0;
     public bool HasNoScans => !HasScans;
 
@@ -726,6 +728,57 @@ public sealed partial class MainWindowViewModel : ObservableObject
         }
     }
 
+    [RelayCommand(CanExecute = nameof(HasLogs))]
+    private Task CopyLogsAsync()
+    {
+        return CopyTextAsync(TextReportFormatter.FormatLogs(_logProjectName, Logs));
+    }
+
+    [RelayCommand(CanExecute = nameof(HasLogs))]
+    private Task DownloadLogsAsync()
+    {
+        return SaveReportAsync("logs", TextReportFormatter.FormatLogs(_logProjectName, Logs), _logProjectName);
+    }
+
+    [RelayCommand(CanExecute = nameof(HasMisconfigurationFindings))]
+    private Task CopyMisconfigurationReportAsync()
+    {
+        return CopyTextAsync(TextReportFormatter.FormatFindings(SelectedProject?.Name, "Configurações incorretas", MisconfigurationFindings));
+    }
+
+    [RelayCommand(CanExecute = nameof(HasMisconfigurationFindings))]
+    private Task DownloadMisconfigurationReportAsync()
+    {
+        var content = TextReportFormatter.FormatFindings(SelectedProject?.Name, "Configurações incorretas", MisconfigurationFindings);
+        return SaveReportAsync("configurações-incorretas", content);
+    }
+
+    [RelayCommand(CanExecute = nameof(HasSecretFindings))]
+    private Task CopySecretReportAsync()
+    {
+        return CopyTextAsync(TextReportFormatter.FormatFindings(SelectedProject?.Name, "Segredos", SecretFindings));
+    }
+
+    [RelayCommand(CanExecute = nameof(HasSecretFindings))]
+    private Task DownloadSecretReportAsync()
+    {
+        var content = TextReportFormatter.FormatFindings(SelectedProject?.Name, "Segredos", SecretFindings);
+        return SaveReportAsync("segredos", content);
+    }
+
+    private async Task SaveReportAsync(string category, string content, string? projectName = null)
+    {
+        var fileName = TextReportFormatter.BuildSuggestedFileName(projectName ?? SelectedProject?.Name, category, DateTimeOffset.Now);
+        try
+        {
+            await _dialogService.SaveTextFileAsync(fileName, content);
+        }
+        catch (Exception ex)
+        {
+            await _dialogService.ShowMessageAsync("Erro ao salvar arquivo", $"Não foi possível salvar o relatório.\n\n{ex.Message}");
+        }
+    }
+
     [RelayCommand]
     private Task CopyCveAsync(FindingRowViewModel finding)
     {
@@ -795,12 +848,18 @@ public sealed partial class MainWindowViewModel : ObservableObject
             return;
         }
 
+        _logProjectName = SelectedProject.Name;
         Logs.Clear();
+        NotifyLogStateChanged();
         IsScanRunning = true;
         _scanCancellation = new CancellationTokenSource();
 
         var progress = new Progress<ScanProgress>(value => Dispatcher.UIThread.Post(() => ProgressText = value.Message));
-        var logs = new Progress<ProcessLogLine>(line => Dispatcher.UIThread.Post(() => Logs.Add($"{line.At:HH:mm:ss} {line.Stream}: {line.Message}")));
+        var logs = new Progress<ProcessLogLine>(line => Dispatcher.UIThread.Post(() =>
+        {
+            Logs.Add(new LogEntryViewModel(line));
+            NotifyLogStateChanged();
+        }));
 
         try
         {
@@ -969,8 +1028,19 @@ public sealed partial class MainWindowViewModel : ObservableObject
         OnPropertyChanged(nameof(HasNoMisconfigurationFindings));
         OnPropertyChanged(nameof(HasSecretFindings));
         OnPropertyChanged(nameof(HasNoSecretFindings));
+        CopyMisconfigurationReportCommand.NotifyCanExecuteChanged();
+        DownloadMisconfigurationReportCommand.NotifyCanExecuteChanged();
+        CopySecretReportCommand.NotifyCanExecuteChanged();
+        DownloadSecretReportCommand.NotifyCanExecuteChanged();
         OnPropertyChanged(nameof(HasScans));
         OnPropertyChanged(nameof(HasNoScans));
+    }
+
+    private void NotifyLogStateChanged()
+    {
+        OnPropertyChanged(nameof(HasLogs));
+        CopyLogsCommand.NotifyCanExecuteChanged();
+        DownloadLogsCommand.NotifyCanExecuteChanged();
     }
 
     private static FindingSeverity? TryGetSeverityFilter(string value)

@@ -10,6 +10,27 @@
 
 ### Security
 
+## [0.3.0] - 2026-08-07
+
+### Added
+
+- Copy and TXT export actions for current scan logs, misconfiguration findings, and secret findings.
+- Semantic log coloring for informational, warning, and error output.
+- Additional case-insensitive Dockerfile detection for filenames containing `Dockerfile` with prefixes or suffixes.
+
+### Changed
+
+- On-screen scan logs now retain structured stream and severity information for display and export.
+- Text reports use a consistent UTF-8 format with project, category, totals, and detailed findings.
+
+### Fixed
+
+- Dockerfiles such as `Dockerfile.dev`, `Dockerfile-hom`, and `api-Dockerfile` are now included in misconfiguration scans.
+
+### Security
+
+- Secret reports and clipboard exports contain only the masked snippets already approved for display and persistence.
+
 ## [0.2.1] - 2026-08-05
 
 ### Added
