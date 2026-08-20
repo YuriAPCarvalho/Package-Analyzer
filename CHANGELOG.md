@@ -10,6 +10,12 @@
 
 ### Security
 
+## [0.3.1] - 2026-08-20
+
+### Fixed
+
+- Corrigido erro ao cadastrar novamente uma pasta de projeto já existente.
+
 ## [0.3.0] - 2026-08-07
 
 ### Added
