@@ -462,14 +462,21 @@ public sealed partial class MainWindowViewModel : ObservableObject
             return;
         }
 
+        var normalizedFolder = string.Empty;
         try
         {
-            var detection = await _detectionService.DetectAsync(folder);
-            var name = Path.GetFileName(folder.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+            normalizedFolder = NormalizeProjectPath(folder);
+            if (await SelectExistingProjectAsync(normalizedFolder))
+            {
+                return;
+            }
+
+            var detection = await _detectionService.DetectAsync(normalizedFolder);
+            var name = Path.GetFileName(normalizedFolder);
             var project = new Project
             {
-                Name = string.IsNullOrWhiteSpace(name) ? folder : name,
-                Path = folder,
+                Name = string.IsNullOrWhiteSpace(name) ? normalizedFolder : name,
+                Path = normalizedFolder,
                 Technology = detection.SuggestedTechnology,
                 PackageManager = detection.SuggestedPackageManager,
                 StorageMode = ReportStorageMode.Central
@@ -479,10 +486,78 @@ public sealed partial class MainWindowViewModel : ObservableObject
             await _dbContext.SaveChangesAsync();
             await ReloadProjectsAsync(project.Id, selectFirstWhenMissing: true);
         }
+        catch (DbUpdateException ex) when (IsProjectPathUniqueViolation(ex))
+        {
+            DetachPendingProjectAdds();
+            if (!string.IsNullOrWhiteSpace(normalizedFolder) && await SelectExistingProjectAsync(normalizedFolder))
+            {
+                return;
+            }
+
+            await _dialogService.ShowMessageAsync("Projeto já cadastrado", "Esta pasta já está cadastrada.");
+        }
         catch (Exception ex)
         {
-            await _dialogService.ShowMessageAsync("Erro ao cadastrar projeto", ex.Message);
+            await _dialogService.ShowMessageAsync("Erro ao cadastrar projeto", GetUsefulExceptionMessage(ex));
         }
+    }
+
+    private async Task<bool> SelectExistingProjectAsync(string normalizedFolder)
+    {
+        var existingProject = await FindProjectByPathAsync(normalizedFolder);
+        if (existingProject is null)
+        {
+            return false;
+        }
+
+        await ReloadProjectsAsync(existingProject.Id, selectFirstWhenMissing: true);
+        await _dialogService.ShowMessageAsync(
+            "Projeto já cadastrado",
+            $"Esta pasta já está cadastrada como \"{existingProject.Name}\".");
+        return true;
+    }
+
+    private async Task<Project?> FindProjectByPathAsync(string normalizedFolder)
+    {
+        var projects = await _dbContext.Projects.ToListAsync();
+        return projects.FirstOrDefault(project => PathsEqual(project.Path, normalizedFolder));
+    }
+
+    private void DetachPendingProjectAdds()
+    {
+        foreach (var entry in _dbContext.ChangeTracker.Entries()
+                     .Where(entry => entry.State == EntityState.Added
+                         && entry.Entity is Project or ProjectCommand)
+                     .ToList())
+        {
+            entry.State = EntityState.Detached;
+        }
+    }
+
+    private static bool IsProjectPathUniqueViolation(DbUpdateException exception)
+    {
+        return GetUsefulExceptionMessage(exception).Contains("UNIQUE constraint failed: Projects.Path", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string GetUsefulExceptionMessage(Exception exception)
+    {
+        var current = exception;
+        while (current.InnerException is not null)
+        {
+            current = current.InnerException;
+        }
+
+        return current.Message;
+    }
+
+    private static bool PathsEqual(string left, string right)
+    {
+        return NormalizeProjectPath(left).Equals(NormalizeProjectPath(right), StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string NormalizeProjectPath(string path)
+    {
+        return Path.TrimEndingDirectorySeparator(Path.GetFullPath(path.Trim()));
     }
 
     [RelayCommand(CanExecute = nameof(CanRunScan))]
